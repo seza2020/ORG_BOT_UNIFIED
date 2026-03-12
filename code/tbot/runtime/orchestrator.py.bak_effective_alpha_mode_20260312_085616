@@ -555,16 +555,11 @@ def run_loop(args):
             _emit('chop_v1_rejected', {'reason': f'chop_v1_exception:{type(e).__name__}', 'err': str(e)}, run_id=run_id)
 
         gate_reason = "ok"
-        effective_alpha_mode = (
-            plan.get("alpha_mode")
-            if isinstance(plan, dict) and plan.get("alpha_mode")
-            else alpha.get("mode")
-        )
         gate_meta = {
             "symbol": symbols[0] if symbols else "SPY",
             "regime": regime.get("regime"),
             "bias": core_ctx.get("bias"),
-            "alpha_mode": effective_alpha_mode,
+            "alpha_mode": alpha.get("mode"),
             "confidence": regime.get("confidence"),
             "min_conf": min_conf,
             "min_rr": min_rr,
@@ -572,7 +567,7 @@ def run_loop(args):
 
         if plan is None:
             gate_reason = plan_reason or "plan_none"
-        elif not _warmup_alpha_allowed(effective_alpha_mode, run_id=run_id):
+        elif not _warmup_alpha_allowed(alpha.get('mode'), run_id=run_id):
             gate_reason = "alpha_mode_off"
         elif float(regime.get("confidence", 0.0) or 0.0) < min_conf:
             gate_reason = "confidence_below_min"
