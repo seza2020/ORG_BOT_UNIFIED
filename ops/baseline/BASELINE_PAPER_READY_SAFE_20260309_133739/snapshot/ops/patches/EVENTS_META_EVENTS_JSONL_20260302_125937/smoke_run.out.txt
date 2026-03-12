@@ -1,0 +1,53 @@
+[PERSIST_CAP] day=2026-03-02 valid_accepts=0 orig_cap=15 effective_cap=15
+INFO  | 2026-03-02T12:59:37 | 2872b555 | boot {'iterations': 10, 'sleep_sec': 0.1, 'daily_alpha_kill_r': -2.0, 'weekly_kill_r': -5.0, 'sim_daily_r': 0.0, 'sim_week_r': 0.0, 'sim_trade': False, 'force_signal_sid': None, 'shadow_enabled': False, 'shadow_path': None, 'shadow_risk_usd': None, 'shadow_max_qty': None, 'gate': None, 'strategies': [{'sid': 'S01', 'is_alpha': False}, {'sid': 'S11', 'is_alpha': True}]}
+INFO  | 2026-03-02T12:59:48 | 2872b555 | regime {'regime': 'TREND', 'confidence': 0.0, 'alpha_mode': 'ON'}
+INFO  | 2026-03-02T12:59:48 | 2872b555 | core_context {'bias': 'SHORT', 'trend_strength': 6.84821786462163e-05, 'vwap_state': 'ABOVE', 'ema_sep': 0.09386905564826975, 'reason': 'core_ctx_v2_scaled'}
+INFO  | 2026-03-02T12:59:48 | 2872b555 | alpha_mode {'mode': 'OFF', 'cap_ratio': 0.0, 'reason': 'alpha_off_trend_weak(ts=0.000,th=0.35)'}
+INFO  | 2026-03-02T12:59:48 | 2872b555 | signal_skip {'reason': 'pre_close_active'}
+INFO  | 2026-03-02T12:59:48 | 2872b555 | HEARTBEAT in_session=True pre_close=True alpha_kill=False portfolio_kill=False daily_r=+0.00 week_r=+0.00 active=None
+INFO  | 2026-03-02T12:59:58 | 2872b555 | regime {'regime': 'TREND', 'confidence': 0.0, 'alpha_mode': 'ON'}
+INFO  | 2026-03-02T12:59:58 | 2872b555 | core_context {'bias': 'SHORT', 'trend_strength': 9.944503394248372e-05, 'vwap_state': 'ABOVE', 'ema_sep': 0.12051344151700505, 'reason': 'core_ctx_v2_scaled'}
+INFO  | 2026-03-02T12:59:58 | 2872b555 | alpha_mode {'mode': 'OFF', 'cap_ratio': 0.0, 'reason': 'alpha_off_trend_weak(ts=0.000,th=0.35)'}
+INFO  | 2026-03-02T12:59:58 | 2872b555 | signal_skip {'reason': 'pre_close_active'}
+INFO  | 2026-03-02T12:59:58 | 2872b555 | HEARTBEAT in_session=True pre_close=True alpha_kill=False portfolio_kill=False daily_r=+0.00 week_r=+0.00 active=None
+INFO  | 2026-03-02T13:00:08 | 2872b555 | regime {'regime': 'TREND', 'confidence': 0.0, 'alpha_mode': 'ON'}
+INFO  | 2026-03-02T13:00:08 | 2872b555 | core_context {'bias': 'SHORT', 'trend_strength': 0.5003429704312712, 'vwap_state': 'BELOW', 'ema_sep': 0.12807574897027507, 'reason': 'core_ctx_v2_scaled'}
+INFO  | 2026-03-02T13:00:08 | 2872b555 | alpha_mode {'mode': 'CAP50', 'cap_ratio': 0.5, 'reason': 'alpha_cap_trend(ts=0.500,th=0.35)'}
+INFO  | 2026-03-02T13:00:08 | 2872b555 | signal_skip {'reason': 'pre_close_active'}
+INFO  | 2026-03-02T13:00:08 | 2872b555 | HEARTBEAT in_session=True pre_close=True alpha_kill=False portfolio_kill=False daily_r=+0.00 week_r=+0.00 active=None
+INFO  | 2026-03-02T13:00:18 | 2872b555 | regime {'regime': 'TREND', 'confidence': 0.0, 'alpha_mode': 'ON'}
+INFO  | 2026-03-02T13:00:18 | 2872b555 | core_context {'bias': 'SHORT', 'trend_strength': 9.770563897202739e-05, 'vwap_state': 'ABOVE', 'ema_sep': 0.11840163202577969, 'reason': 'core_ctx_v2_scaled'}
+INFO  | 2026-03-02T13:00:18 | 2872b555 | alpha_mode {'mode': 'OFF', 'cap_ratio': 0.0, 'reason': 'alpha_off_trend_weak(ts=0.000,th=0.35)'}
+INFO  | 2026-03-02T13:00:18 | 2872b555 | signal_skip {'reason': 'out_of_session'}
+INFO  | 2026-03-02T13:00:18 | 2872b555 | HEARTBEAT in_session=False pre_close=False alpha_kill=False portfolio_kill=False daily_r=+0.00 week_r=+0.00 active=None
+INFO  | 2026-03-02T13:00:28 | 2872b555 | regime {'regime': 'TREND', 'confidence': 0.0, 'alpha_mode': 'ON'}
+INFO  | 2026-03-02T13:00:28 | 2872b555 | core_context {'bias': 'SHORT', 'trend_strength': 6.425597248642217e-05, 'vwap_state': 'ABOVE', 'ema_sep': 0.08807464557798994, 'reason': 'core_ctx_v2_scaled'}
+INFO  | 2026-03-02T13:00:28 | 2872b555 | alpha_mode {'mode': 'OFF', 'cap_ratio': 0.0, 'reason': 'alpha_off_trend_weak(ts=0.000,th=0.35)'}
+INFO  | 2026-03-02T13:00:28 | 2872b555 | signal_skip {'reason': 'out_of_session'}
+INFO  | 2026-03-02T13:00:28 | 2872b555 | HEARTBEAT in_session=False pre_close=False alpha_kill=False portfolio_kill=False daily_r=+0.00 week_r=+0.00 active=None
+INFO  | 2026-03-02T13:00:38 | 2872b555 | regime {'regime': 'TREND', 'confidence': 0.0, 'alpha_mode': 'ON'}
+INFO  | 2026-03-02T13:00:38 | 2872b555 | core_context {'bias': 'SHORT', 'trend_strength': 6.425597248642217e-05, 'vwap_state': 'ABOVE', 'ema_sep': 0.08807464557798994, 'reason': 'core_ctx_v2_scaled'}
+INFO  | 2026-03-02T13:00:38 | 2872b555 | alpha_mode {'mode': 'OFF', 'cap_ratio': 0.0, 'reason': 'alpha_off_trend_weak(ts=0.000,th=0.35)'}
+INFO  | 2026-03-02T13:00:38 | 2872b555 | signal_skip {'reason': 'out_of_session'}
+INFO  | 2026-03-02T13:00:38 | 2872b555 | HEARTBEAT in_session=False pre_close=False alpha_kill=False portfolio_kill=False daily_r=+0.00 week_r=+0.00 active=None
+INFO  | 2026-03-02T13:00:49 | 2872b555 | regime {'regime': 'TREND', 'confidence': 0.0, 'alpha_mode': 'ON'}
+INFO  | 2026-03-02T13:00:49 | 2872b555 | core_context {'bias': 'SHORT', 'trend_strength': 9.770563897202739e-05, 'vwap_state': 'ABOVE', 'ema_sep': 0.11840163202577969, 'reason': 'core_ctx_v2_scaled'}
+INFO  | 2026-03-02T13:00:49 | 2872b555 | alpha_mode {'mode': 'OFF', 'cap_ratio': 0.0, 'reason': 'alpha_off_trend_weak(ts=0.000,th=0.35)'}
+INFO  | 2026-03-02T13:00:49 | 2872b555 | signal_skip {'reason': 'out_of_session'}
+INFO  | 2026-03-02T13:00:49 | 2872b555 | HEARTBEAT in_session=False pre_close=False alpha_kill=False portfolio_kill=False daily_r=+0.00 week_r=+0.00 active=None
+INFO  | 2026-03-02T13:00:59 | 2872b555 | regime {'regime': 'TREND', 'confidence': 0.0, 'alpha_mode': 'ON'}
+INFO  | 2026-03-02T13:00:59 | 2872b555 | core_context {'bias': 'SHORT', 'trend_strength': 0.5003429704312712, 'vwap_state': 'BELOW', 'ema_sep': 0.12807574897027507, 'reason': 'core_ctx_v2_scaled'}
+INFO  | 2026-03-02T13:00:59 | 2872b555 | alpha_mode {'mode': 'CAP50', 'cap_ratio': 0.5, 'reason': 'alpha_cap_trend(ts=0.500,th=0.35)'}
+INFO  | 2026-03-02T13:00:59 | 2872b555 | signal_skip {'reason': 'out_of_session'}
+INFO  | 2026-03-02T13:00:59 | 2872b555 | HEARTBEAT in_session=False pre_close=False alpha_kill=False portfolio_kill=False daily_r=+0.00 week_r=+0.00 active=None
+INFO  | 2026-03-02T13:01:09 | 2872b555 | regime {'regime': 'TREND', 'confidence': 0.0, 'alpha_mode': 'ON'}
+INFO  | 2026-03-02T13:01:09 | 2872b555 | core_context {'bias': 'SHORT', 'trend_strength': 0.0001040976282103891, 'vwap_state': 'ABOVE', 'ema_sep': 0.12614162454360667, 'reason': 'core_ctx_v2_scaled'}
+INFO  | 2026-03-02T13:01:09 | 2872b555 | alpha_mode {'mode': 'OFF', 'cap_ratio': 0.0, 'reason': 'alpha_off_trend_weak(ts=0.000,th=0.35)'}
+INFO  | 2026-03-02T13:01:09 | 2872b555 | signal_skip {'reason': 'out_of_session'}
+INFO  | 2026-03-02T13:01:09 | 2872b555 | HEARTBEAT in_session=False pre_close=False alpha_kill=False portfolio_kill=False daily_r=+0.00 week_r=+0.00 active=None
+INFO  | 2026-03-02T13:01:19 | 2872b555 | regime {'regime': 'TREND', 'confidence': 0.0, 'alpha_mode': 'ON'}
+INFO  | 2026-03-02T13:01:19 | 2872b555 | core_context {'bias': 'SHORT', 'trend_strength': 6.425597248642217e-05, 'vwap_state': 'ABOVE', 'ema_sep': 0.08807464557798994, 'reason': 'core_ctx_v2_scaled'}
+INFO  | 2026-03-02T13:01:19 | 2872b555 | alpha_mode {'mode': 'OFF', 'cap_ratio': 0.0, 'reason': 'alpha_off_trend_weak(ts=0.000,th=0.35)'}
+INFO  | 2026-03-02T13:01:19 | 2872b555 | signal_skip {'reason': 'out_of_session'}
+INFO  | 2026-03-02T13:01:19 | 2872b555 | HEARTBEAT in_session=False pre_close=False alpha_kill=False portfolio_kill=False daily_r=+0.00 week_r=+0.00 active=None
+INFO  | 2026-03-02T13:01:19 | 2872b555 | shutdown {'ok': True, 'final_state': {'in_session': False, 'pre_close': False, 'alpha_kill': False, 'portfolio_kill': False, 'pending': False, 'active': None, 'daily_r': 0.0, 'week_r': 0.0}}

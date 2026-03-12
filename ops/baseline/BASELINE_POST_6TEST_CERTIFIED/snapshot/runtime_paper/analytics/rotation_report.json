@@ -1,0 +1,44 @@
+{
+  "ts": 1772591675.8726203,
+  "ok": true,
+  "enabled_sids": [
+    "S01"
+  ],
+  "candidates": [
+    "S01"
+  ],
+  "killed_sids": [],
+  "rejected": {
+    "S01": [
+      "MIN_TRADES"
+    ]
+  },
+  "top": [],
+  "cfg": {
+    "enabled": true,
+    "min_trades": 30,
+    "rotation_period_sec": 3600,
+    "cooldown_after_rotation_sec": 900,
+    "max_enabled_sids": 3,
+    "rank_weights": {
+      "expectancy": 0.5,
+      "pf": 0.3,
+      "dd_r": -0.2
+    },
+    "min_requirements": {
+      "min_pf": 1.1,
+      "min_expectancy": 0.0,
+      "max_dd_r": 6.0
+    },
+    "fallback_enabled_sids": [
+      "S01"
+    ],
+    "sources": {
+      "strategy_perf": "strategy_perf_summary.json",
+      "strategy_kills": "strategy_kills.json",
+      "regime_allowlist": "regime_allowlist.json",
+      "meta_enabled": "meta_enabled_sids.json"
+    }
+  },
+  "reason": "OK"
+}

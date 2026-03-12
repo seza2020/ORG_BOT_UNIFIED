@@ -1,0 +1,4 @@
+=== TASKS: query ORG_UNIFIED* and TBOT* ===
+TaskName:                             \ORG_UNIFIED_SHADOW_RUN
+Task To Run:                          C:\Program Files\PowerShell\7\pwsh.exe -NoProfile -ExecutionPolicy Bypass -File "C:\alpaca-bot\ORG_BOT_UNIFIED\ops\task_wrappers\ORG_UNIFIED_SHADOW_RUN.ps1"
+SECTION2B_DONE

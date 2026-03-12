@@ -1,0 +1,11 @@
+{
+  "version": "PATCHSPEC_V4",
+  "name": "RUNTIME_HEALTH_STAMP",
+  "target": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\ops\\task_wrappers\\ORG_UNIFIED_RUNTIME_MANAGER.ps1",
+  "operations": [
+    {
+      "type": "append",
+      "text": "\r\n# PATCH_V4_RUNTIME_HEALTH_BEGIN\ntry{\n$root=\"C:\\alpaca-bot\\ORG_BOT_UNIFIED\"\n$py=\"C:\\alpaca-bot\\ORG_BOT_UNIFIED\\code\\.venv\\Scripts\\python.exe\"\n$log=\"C:\\alpaca-bot\\ORG_BOT_UNIFIED\\runtime\\paper\\logs\\runtime_health.jsonl\"\n\n$row=[ordered]@{\nts=(Get-Date).ToString(\"s\")\nkind=\"runtime_health_v4\"\nwrapper=\"ORG_UNIFIED_RUNTIME_MANAGER.ps1\"\nwrapper_version=\"v4\"\npatch_level=\"PATCHSPEC_V4\"\nrun_profile=$env:TBOT_PROFILE\nprocess_id=$PID\ncanonical_root=$root\ncanonical_root_exists=(Test-Path $root)\ncanonical_python=$py\ncanonical_python_exists=(Test-Path $py)\n}\n\n$dir=Split-Path $log\nNew-Item -ItemType Directory -Force $dir|Out-Null\n($row|ConvertTo-Json -Compress)|Add-Content $log -Encoding UTF8\n}catch{}\n# PATCH_V4_RUNTIME_HEALTH_END\r\n"
+    }
+  ]
+}

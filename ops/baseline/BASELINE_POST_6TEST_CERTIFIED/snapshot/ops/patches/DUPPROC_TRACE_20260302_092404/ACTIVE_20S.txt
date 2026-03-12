@@ -1,0 +1,111 @@
+TRACE_START 2026-03-02T09:24:04.4605029-08:00
+---- SNAP 2026-03-02T09:24:06.4718294-08:00 ----
+PID=14880 PPID=17492
+CMD="C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+PARENT_NAME=pwsh.exe
+PARENT_CMD="C:\Program Files\PowerShell\7\pwsh.exe" -NoProfile -ExecutionPolicy Bypass -File C:\alpaca-bot\ORG_BOT_UNIFIED\ops\task_wrappers\ORG_UNIFIED_PAPER_RUN.ps1
+
+PID=18068 PPID=14880
+CMD="C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+PARENT_NAME=python.exe
+PARENT_CMD="C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+---- SNAP 2026-03-02T09:24:08.7486170-08:00 ----
+PID=14880 PPID=17492
+CMD="C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+PARENT_NAME=pwsh.exe
+PARENT_CMD="C:\Program Files\PowerShell\7\pwsh.exe" -NoProfile -ExecutionPolicy Bypass -File C:\alpaca-bot\ORG_BOT_UNIFIED\ops\task_wrappers\ORG_UNIFIED_PAPER_RUN.ps1
+
+PID=18068 PPID=14880
+CMD="C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+PARENT_NAME=python.exe
+PARENT_CMD="C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+---- SNAP 2026-03-02T09:24:10.9519119-08:00 ----
+PID=14880 PPID=17492
+CMD="C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+PARENT_NAME=pwsh.exe
+PARENT_CMD="C:\Program Files\PowerShell\7\pwsh.exe" -NoProfile -ExecutionPolicy Bypass -File C:\alpaca-bot\ORG_BOT_UNIFIED\ops\task_wrappers\ORG_UNIFIED_PAPER_RUN.ps1
+
+PID=18068 PPID=14880
+CMD="C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+PARENT_NAME=python.exe
+PARENT_CMD="C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+---- SNAP 2026-03-02T09:24:13.1814356-08:00 ----
+PID=14880 PPID=17492
+CMD="C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+PARENT_NAME=pwsh.exe
+PARENT_CMD="C:\Program Files\PowerShell\7\pwsh.exe" -NoProfile -ExecutionPolicy Bypass -File C:\alpaca-bot\ORG_BOT_UNIFIED\ops\task_wrappers\ORG_UNIFIED_PAPER_RUN.ps1
+
+PID=18068 PPID=14880
+CMD="C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+PARENT_NAME=python.exe
+PARENT_CMD="C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+---- SNAP 2026-03-02T09:24:15.3975851-08:00 ----
+PID=14880 PPID=17492
+CMD="C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+PARENT_NAME=pwsh.exe
+PARENT_CMD="C:\Program Files\PowerShell\7\pwsh.exe" -NoProfile -ExecutionPolicy Bypass -File C:\alpaca-bot\ORG_BOT_UNIFIED\ops\task_wrappers\ORG_UNIFIED_PAPER_RUN.ps1
+
+PID=18068 PPID=14880
+CMD="C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+PARENT_NAME=python.exe
+PARENT_CMD="C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+---- SNAP 2026-03-02T09:24:17.6457903-08:00 ----
+PID=14880 PPID=17492
+CMD="C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+PARENT_NAME=pwsh.exe
+PARENT_CMD="C:\Program Files\PowerShell\7\pwsh.exe" -NoProfile -ExecutionPolicy Bypass -File C:\alpaca-bot\ORG_BOT_UNIFIED\ops\task_wrappers\ORG_UNIFIED_PAPER_RUN.ps1
+
+PID=18068 PPID=14880
+CMD="C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+PARENT_NAME=python.exe
+PARENT_CMD="C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+---- SNAP 2026-03-02T09:24:19.8079661-08:00 ----
+PID=14880 PPID=17492
+CMD="C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+PARENT_NAME=pwsh.exe
+PARENT_CMD="C:\Program Files\PowerShell\7\pwsh.exe" -NoProfile -ExecutionPolicy Bypass -File C:\alpaca-bot\ORG_BOT_UNIFIED\ops\task_wrappers\ORG_UNIFIED_PAPER_RUN.ps1
+
+PID=18068 PPID=14880
+CMD="C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+PARENT_NAME=python.exe
+PARENT_CMD="C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+---- SNAP 2026-03-02T09:24:22.0450748-08:00 ----
+PID=14880 PPID=17492
+CMD="C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+PARENT_NAME=pwsh.exe
+PARENT_CMD="C:\Program Files\PowerShell\7\pwsh.exe" -NoProfile -ExecutionPolicy Bypass -File C:\alpaca-bot\ORG_BOT_UNIFIED\ops\task_wrappers\ORG_UNIFIED_PAPER_RUN.ps1
+
+PID=18068 PPID=14880
+CMD="C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+PARENT_NAME=python.exe
+PARENT_CMD="C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+---- SNAP 2026-03-02T09:24:24.2585422-08:00 ----
+PID=14880 PPID=17492
+CMD="C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+PARENT_NAME=pwsh.exe
+PARENT_CMD="C:\Program Files\PowerShell\7\pwsh.exe" -NoProfile -ExecutionPolicy Bypass -File C:\alpaca-bot\ORG_BOT_UNIFIED\ops\task_wrappers\ORG_UNIFIED_PAPER_RUN.ps1
+
+PID=18068 PPID=14880
+CMD="C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+PARENT_NAME=python.exe
+PARENT_CMD="C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+---- SNAP 2026-03-02T09:24:26.4614140-08:00 ----
+PID=14880 PPID=17492
+CMD="C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+PARENT_NAME=pwsh.exe
+PARENT_CMD="C:\Program Files\PowerShell\7\pwsh.exe" -NoProfile -ExecutionPolicy Bypass -File C:\alpaca-bot\ORG_BOT_UNIFIED\ops\task_wrappers\ORG_UNIFIED_PAPER_RUN.ps1
+
+PID=18068 PPID=14880
+CMD="C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+PARENT_NAME=python.exe
+PARENT_CMD="C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+

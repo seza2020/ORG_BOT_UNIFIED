@@ -1,0 +1,19 @@
+param(
+  [string]$Root    = "C:\alpaca-bot\org_bot",
+  [string]$RunRoot = "C:\alpaca-bot\org_bot_runtime\paper"
+)
+$ErrorActionPreference="Stop"
+
+$opsDir = Join-Path (Join-Path $RunRoot "logs") "ops"
+New-Item -ItemType Directory -Force -Path $opsDir | Out-Null
+
+$marker = Join-Path $opsDir "PREFLIGHT_OK.marker"
+$payload = [pscustomobject]@{
+  ts_local = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
+  kind     = "PREFLIGHT_OK"
+  root     = $Root
+  runroot  = $RunRoot
+}
+$payload | ConvertTo-Json -Depth 6 | Set-Content -Encoding UTF8 -LiteralPath $marker
+Write-Host ("[HOOK] WROTE_MARKER=" + $marker)
+exit 0

@@ -1,0 +1,44 @@
+param(
+  [Parameter(Mandatory=$false)]
+  [ValidateSet("PAPER","SHADOW","paper","shadow")]
+  [string]$Profile = "PAPER",
+
+  [Parameter(Mandatory=$false)]
+  [string]$UnifiedRoot = "C:\alpaca-bot\ORG_BOT_UNIFIED",
+
+  # Optional override. If provided, takes precedence over Profile mapping.
+  [Parameter(Mandatory=$false)]
+  [string]$RunRoot = ""
+)
+
+$ErrorActionPreference="Stop"
+
+# Normalize
+$p = $Profile.ToUpperInvariant()
+
+if([string]::IsNullOrWhiteSpace($RunRoot)){
+  if($p -eq "SHADOW"){
+    $RunRoot = Join-Path $UnifiedRoot "runtime\shadow"
+  } else {
+    $RunRoot = Join-Path $UnifiedRoot "runtime\paper"
+  }
+}
+
+# Ensure logs dir exists
+$LogDir = Join-Path $RunRoot "logs"
+if(!(Test-Path $LogDir)){
+  New-Item -ItemType Directory -Force $LogDir | Out-Null
+}
+
+$LogFile = Join-Path $LogDir "ops_guard.log"
+
+$line = "$(Get-Date -Format "yyyy-MM-dd HH:mm:ss.fff") | GUARD_OK | Profile=$p | RunRoot=$RunRoot"
+Add-Content -LiteralPath $LogFile -Value $line
+
+# Return object for callers (non-breaking)
+[pscustomobject]@{
+  ok      = $true
+  profile = $p
+  runroot = $RunRoot
+  logfile = $LogFile
+}

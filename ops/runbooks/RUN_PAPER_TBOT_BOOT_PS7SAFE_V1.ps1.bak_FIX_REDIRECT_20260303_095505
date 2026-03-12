@@ -1,0 +1,87 @@
+$ErrorActionPreference="Stop"
+
+$ROOT="C:\alpaca-bot\ORG_BOT_UNIFIED"
+$CODE=Join-Path $ROOT "code"
+$RUNROOT=Join-Path $ROOT "runtime\paper"
+$LOGDIR=Join-Path $RUNROOT "logs"
+$OPSLOG=Join-Path $LOGDIR "ops"
+$AUD=Join-Path $ROOT "ops\audit"
+$stamp=Get-Date -Format "yyyyMMdd_HHmmss"
+$ADIR=Join-Path $AUD ("PAPER_TBOT_BOOT_" + $stamp)
+New-Item -ItemType Directory -Force $ADIR | Out-Null
+
+function WL([string]$s){
+  $ts=Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+  ("[{0}] {1}" -f $ts, $s) | Add-Content -LiteralPath (Join-Path $ADIR "boot_log.txt") -Encoding UTF8
+}
+
+WL "START_TBOT_BOOT"
+WL ("PSVersion=" + $PSVersionTable.PSVersion.ToString())
+WL ("ROOT=" + $ROOT)
+WL ("CODE=" + $CODE)
+WL ("RUNROOT=" + $RUNROOT)
+
+# --- hard bind env ---
+Set-Location $CODE
+$env:PYTHONPATH=$CODE
+$env:TBOT_ROOT=$ROOT
+$env:TBOT_CODE=$CODE
+$env:TBOT_RUNROOT=$RUNROOT
+$env:TBOT_LOG_ROOT=$LOGDIR
+$env:TBOT_OPS_LOG=$OPSLOG
+
+New-Item -ItemType Directory -Force -Path $OPSLOG | Out-Null
+
+# --- resolve python venv ---
+$py=Join-Path $ROOT ".venv\Scripts\python.exe"
+if(!(Test-Path $py)){ $py=Join-Path $CODE ".venv\Scripts\python.exe" }
+if(!(Test-Path $py)){ throw "MISSING_PYTHON_VENV" }
+
+# --- load secrets (Paper) ---
+$ldr1=Join-Path $CODE "tools\secrets\LOAD_PROFILE_SECRETS_V1.ps1"
+$ldr2=Join-Path $ROOT "ops\secrets\LOAD_PROFILE_SECRETS_V1.ps1"
+$ldr = if(Test-Path $ldr1){ $ldr1 } elseif(Test-Path $ldr2){ $ldr2 } else { "" }
+if([string]::IsNullOrWhiteSpace($ldr)){ throw "MISSING_SECRETS_LOADER" }
+
+WL ("SECRETS_LOADER=" + $ldr)
+& "C:\Program Files\PowerShell\7\pwsh.exe" -NoProfile -ExecutionPolicy Bypass -File $ldr -Profile "PAPER" -ProjectRoot $ROOT -RunRoot $RUNROOT | Out-Null
+WL "SECRETS_LOADED=1"
+
+# --- kill stale tbot ---
+Get-CimInstance Win32_Process -Filter "Name='python.exe'" |
+  Where-Object { $_.CommandLine -match "tbot\.main" -and $_.CommandLine -match "ORG_BOT_UNIFIED" } |
+  ForEach-Object { try{ Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue } catch {} }
+
+# --- start tbot.main (NO --paper) ---
+$out=Join-Path $ADIR "tbot_stdout.txt"
+$err=Join-Path $ADIR "tbot_stderr.txt"
+$args=@("-m","tbot.main","--run")
+
+WL ("LAUNCH=" + ($args -join " "))
+$p = Start-Process -FilePath $py -ArgumentList $args -PassThru -NoNewWindow 
+      -RedirectStandardOutput $out -RedirectStandardError $err
+
+Start-Sleep -Seconds 8
+
+$py2 = Get-CimInstance Win32_Process -Filter "Name='python.exe'" |
+       Where-Object { $_.CommandLine -match "tbot\.main" -and $_.CommandLine -match "ORG_BOT_UNIFIED" }
+
+WL ("STARTED_PID=" + $p.Id)
+WL ("TBOT_PY_COUNT_NOW=" + $py2.Count)
+WL ("STDERR_SIZE_BYTES=" + (if(Test-Path $err){ (Get-Item $err).Length } else { 0 }))
+
+Write-Host ("AUDITDIR=" + $ADIR)
+Write-Host ("STARTED_PID=" + $p.Id)
+Write-Host ("TBOT_PY_COUNT_NOW=" + $py2.Count)
+if(Test-Path $err){ Write-Host ("STDERR_SIZE_BYTES=" + (Get-Item $err).Length) }
+
+if($py2.Count -eq 0){
+  Write-Host "BOOT_FAILED=1"
+  if(Test-Path $err){
+    Write-Host "---- STDERR_TAIL_160 ----"
+    Get-Content $err -Tail 160
+  }
+} else {
+  Write-Host "BOOT_OK=1"
+  Write-Host "NEXT=Tail runtime\\paper\\logs\\meta_events.jsonl"
+}

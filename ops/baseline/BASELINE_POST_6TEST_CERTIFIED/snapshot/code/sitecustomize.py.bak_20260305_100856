@@ -1,0 +1,298 @@
+import os, time, traceback, json
+
+def _safe(s):
+    try:
+        return str(s)
+    except Exception:
+        return "<unprintable>"
+
+ts=time.time()
+pid=os.getpid()
+ppid=os.getppid()
+cwd=os.getcwd()
+argv=os.sys.argv
+py=os.sys.executable
+pp=os.environ.get("PYTHONPATH")
+runroot=os.environ.get("TBOT_RUNROOT")
+logdir=os.environ.get("TBOT_LOGDIR")
+
+rec={
+  "ts": ts,
+  "pid": pid,
+  "ppid": ppid,
+  "exe": _safe(py),
+  "cwd": _safe(cwd),
+  "argv": [_safe(x) for x in argv],
+  "PYTHONPATH": _safe(pp),
+  "TBOT_RUNROOT": _safe(runroot),
+  "TBOT_LOGDIR": _safe(logdir),
+  "stack": [_safe(x) for x in traceback.format_stack(limit=25)]
+}
+
+# best-effort path: prefer TBOT_LOGDIR if present, else current dir
+out=None
+try:
+    if logdir:
+        out=os.path.join(logdir, "sitecustomize_boot.log")
+    else:
+        out=os.path.join(os.getcwd(), "sitecustomize_boot.log")
+    with open(out, "a", encoding="utf-8") as f:
+        f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+except Exception:
+    pass
+
+# === ORG_UNIFIED_SPAWN_TRAP (audit-only) ===
+import os, sys, time, json, traceback
+
+def _spawn_trap_log(payload: dict):
+    try:
+        runroot = os.environ.get("TBOT_RUNROOT") or os.environ.get("TBOT_LOGDIR") or ""
+        # fallback: local file near code
+        base = runroot if runroot else os.path.dirname(__file__)
+        logdir = os.path.join(base, "logs") if os.path.isdir(base) and not base.endswith("logs") else base
+        os.makedirs(logdir, exist_ok=True)
+        path = os.path.join(logdir, "spawn_trap.jsonl")
+        payload["ts"] = time.time()
+        payload["pid"] = os.getpid()
+        payload["ppid"] = os.getppid() if hasattr(os, "getppid") else None
+        with open(path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(payload, ensure_ascii=False) + "\n")
+    except Exception:
+        pass
+
+# prevent recursion / spam
+if os.environ.get("ORG_UNIFIED_SPAWN_TRAP_ON") != "1":
+    os.environ["ORG_UNIFIED_SPAWN_TRAP_ON"] = "1"
+
+    # --- subprocess.Popen trap
+    try:
+        import subprocess as _st_subprocess
+        _orig_popen = _st_subprocess.Popen
+        def _trap_popen(*a, **k):
+            _spawn_trap_log({
+                "kind":"subprocess.Popen",
+                "args_repr":repr(a[:3]),
+                "kwargs_keys":sorted(list(k.keys()))[:25],
+                "stack":[x.rstrip("\n") for x in traceback.format_stack(limit=35)],
+            })
+            return _orig_popen(*a, **k)
+        _st_subprocess.Popen = _trap_popen
+    except Exception:
+        pass
+
+    # --- os.exec* traps
+    try:
+        _orig_execv  = os.execv
+        _orig_execve = os.execve
+        def _trap_execv(path, args):
+            _spawn_trap_log({"kind":"os.execv","path":path,"args":args,"stack":[x.rstrip("\n") for x in traceback.format_stack(limit=35)]})
+            return _orig_execv(path, args)
+        def _trap_execve(path, args, env):
+            _spawn_trap_log({"kind":"os.execve","path":path,"args":args,"stack":[x.rstrip("\n") for x in traceback.format_stack(limit=35)]})
+            return _orig_execve(path, args, env)
+        os.execv = _trap_execv
+        os.execve = _trap_execve
+    except Exception:
+        pass
+
+    # --- CreateProcess (ctypes) trap (best effort)
+    try:
+        import ctypes as _st_ct
+        import ctypes.wintypes as _st_wt
+        _k32 = _st_ct.windll.kernel32
+        _CreateProcessW = _k32.CreateProcessW
+        def _trap_CreateProcessW(app, cmd, *rest):
+            _spawn_trap_log({
+                "kind":"CreateProcessW",
+                "app": str(app),
+                "cmd": str(cmd),
+                "stack":[x.rstrip("\n") for x in traceback.format_stack(limit=35)],
+            })
+            return _CreateProcessW(app, cmd, *rest)
+        _k32.CreateProcessW = _trap_CreateProcessW
+    except Exception:
+        pass
+# === /ORG_UNIFIED_SPAWN_TRAP ===
+
+
+# --- OS_SPAWN_TRAP_V1 BEGIN ---
+# Trap os.spawn* family to detect any self-spawn that bypasses subprocess.Popen traps.
+try:
+    import os as _st_os
+    import json as _st_json
+    import time as _st_time
+    import traceback as _st_tb
+    import pathlib as _st_pl
+
+    _st_logdir = (_st_os.getenv("TBOT_LOGDIR") or "").strip()
+    _st_f = None
+    try:
+        if _st_logdir:
+            _st_pl.Path(_st_logdir).mkdir(parents=True, exist_ok=True)
+            _st_f = str(_st_pl.Path(_st_logdir) / "spawn_os_trap.jsonl")
+    except Exception:
+        _st_f = None
+
+    def _st_write(obj: dict) -> None:
+        if not _st_f:
+            return
+        try:
+            obj["ts"] = _st_time.time()
+            obj["pid"] = _st_os.getpid()
+            obj["ppid"] = _st_os.getppid()
+            with open(_st_f, "a", encoding="utf-8") as _w:
+                _w.write(_st_json.dumps(obj, ensure_ascii=False) + "\n")
+        except Exception:
+            pass
+
+    def _wrap_spawn(name: str):
+        if not hasattr(_st_os, name):
+            return
+        _orig = getattr(_st_os, name)
+        if not callable(_orig):
+            return
+
+        def _wrapped(*a, **k):
+            _st_write({
+                "kind": f"os.{name}",
+                "args_repr": repr(a),
+                "kwargs_keys": list(k.keys()),
+                "stack": [x.rstrip("\n") for x in _st_tb.format_stack(limit=35)],
+            })
+            return _orig(*a, **k)
+
+        setattr(_st_os, name, _wrapped)
+
+    for _nm in ("spawnl","spawnle","spawnlp","spawnlpe","spawnv","spawnve","spawnvp","spawnvpe"):
+        _wrap_spawn(_nm)
+
+except Exception:
+    pass
+# --- OS_SPAWN_TRAP_V1 END ---
+
+
+# --- MP_SPAWN_TRAP_V1 BEGIN ---
+# Always write a "loaded" probe + trap multiprocessing.Process.start() (Windows spawn path).
+try:
+    import os as _mp_os
+    import json as _mp_json
+    import time as _mp_time
+    import traceback as _mp_tb
+    import pathlib as _mp_pl
+
+    def _mp_pick_dir() -> str:
+        d = (_mp_os.getenv("TBOT_LOGDIR") or "").strip()
+        if d:
+            return d
+        # fallback: TEMP
+        return (_mp_os.getenv("TEMP") or _mp_os.getenv("TMP") or ".").strip()
+
+    _mp_dir = _mp_pick_dir()
+    try:
+        _mp_pl.Path(_mp_dir).mkdir(parents=True, exist_ok=True)
+    except Exception:
+        _mp_dir = "."
+
+    _mp_loaded = str(_mp_pl.Path(_mp_dir) / "sitecustomize_loaded.jsonl")
+    _mp_mp_log = str(_mp_pl.Path(_mp_dir) / "spawn_mp_trap.jsonl")
+
+    def _mp_write(path: str, obj: dict) -> None:
+        try:
+            obj["ts"] = _mp_time.time()
+            obj["pid"] = _mp_os.getpid()
+            obj["ppid"] = _mp_os.getppid()
+            with open(path, "a", encoding="utf-8") as _w:
+                _w.write(_mp_json.dumps(obj, ensure_ascii=False) + "\n")
+        except Exception:
+            pass
+
+    # PROBE: prove sitecustomize loaded + snapshot env
+    _mp_write(_mp_loaded, {
+        "kind": "sitecustomize_loaded",
+        "cwd": _mp_os.getcwd(),
+        "PYTHONPATH": _mp_os.environ.get("PYTHONPATH"),
+        "TBOT_RUNROOT": _mp_os.environ.get("TBOT_RUNROOT"),
+        "TBOT_LOGDIR": _mp_os.environ.get("TBOT_LOGDIR"),
+    })
+
+    # Trap multiprocessing.Process.start
+    try:
+        import multiprocessing as _mp
+        import multiprocessing.process as _mp_proc
+
+        _orig_start = _mp_proc.BaseProcess.start
+
+        def _start_wrapped(self, *a, **k):
+            _mp_write(_mp_mp_log, {
+                "kind": "multiprocessing.Process.start",
+                "name": getattr(self, "name", None),
+                "daemon": getattr(self, "daemon", None),
+                "target": repr(getattr(self, "_target", None)),
+                "args_repr": repr(getattr(self, "_args", None)),
+                "kwargs_repr": repr(getattr(self, "_kwargs", None)),
+                "stack": [x.rstrip("\n") for x in _mp_tb.format_stack(limit=45)],
+            })
+            return _orig_start(self, *a, **k)
+
+        _mp_proc.BaseProcess.start = _start_wrapped
+    except Exception:
+        pass
+
+except Exception:
+    pass
+# --- MP_SPAWN_TRAP_V1 END ---
+
+
+# --- CREATEPROCESS_TRAP_V1 BEGIN ---
+try:
+    import os as _cp_os
+    import json as _cp_json
+    import time as _cp_time
+    import traceback as _cp_tb
+    import pathlib as _cp_pl
+
+    def _cp_pick_dir() -> str:
+        d = (_cp_os.getenv("TBOT_LOGDIR") or "").strip()
+        if d:
+            return d
+        return (_cp_os.getenv("TEMP") or _cp_os.getenv("TMP") or ".").strip()
+
+    _cp_dir = _cp_pick_dir()
+    try:
+        _cp_pl.Path(_cp_dir).mkdir(parents=True, exist_ok=True)
+    except Exception:
+        _cp_dir = "."
+
+    _cp_log = str(_cp_pl.Path(_cp_dir) / "createprocess_trap.jsonl")
+
+    def _cp_write(obj: dict) -> None:
+        try:
+            obj["ts"] = _cp_time.time()
+            obj["pid"] = _cp_os.getpid()
+            obj["ppid"] = _cp_os.getppid()
+            with open(_cp_log, "a", encoding="utf-8") as _w:
+                _w.write(_cp_json.dumps(obj, ensure_ascii=False) + "\n")
+        except Exception:
+            pass
+
+    try:
+        import _winapi as _cp_winapi
+        _orig_cp = _cp_winapi.CreateProcess
+
+        def _CreateProcess_wrapped(*a, **k):
+            _cp_write({
+                "kind": "_winapi.CreateProcess",
+                "args0_4_repr": repr(a[:5]),
+                "kwargs_keys": list(k.keys()),
+                "stack": [x.rstrip("\n") for x in _cp_tb.format_stack(limit=80)],
+            })
+            return _orig_cp(*a, **k)
+
+        _cp_winapi.CreateProcess = _CreateProcess_wrapped
+    except Exception:
+        pass
+
+except Exception:
+    pass
+# --- CREATEPROCESS_TRAP_V1 END ---
+

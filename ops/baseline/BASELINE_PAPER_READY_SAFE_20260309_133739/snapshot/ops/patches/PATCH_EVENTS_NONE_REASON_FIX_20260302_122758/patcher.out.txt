@@ -1,0 +1,4 @@
+  File "C:\alpaca-bot\ORG_BOT_UNIFIED\ops\patches\PATCH_EVENTS_NONE_REASON_FIX_20260302_122758\patch_events_none_reason_fix.py", line 25
+    "        if kind == \\"strategy_result\\" and isinstance(payload, dict):\\n"
+                                           ^
+SyntaxError: unexpected character after line continuation character

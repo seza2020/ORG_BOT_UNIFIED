@@ -1,0 +1,42 @@
+import os, time, traceback, json
+
+def _safe(s):
+    try:
+        return str(s)
+    except Exception:
+        return "<unprintable>"
+
+ts=time.time()
+pid=os.getpid()
+ppid=os.getppid()
+cwd=os.getcwd()
+argv=os.sys.argv
+py=os.sys.executable
+pp=os.environ.get("PYTHONPATH")
+runroot=os.environ.get("TBOT_RUNROOT")
+logdir=os.environ.get("TBOT_LOGDIR")
+
+rec={
+  "ts": ts,
+  "pid": pid,
+  "ppid": ppid,
+  "exe": _safe(py),
+  "cwd": _safe(cwd),
+  "argv": [_safe(x) for x in argv],
+  "PYTHONPATH": _safe(pp),
+  "TBOT_RUNROOT": _safe(runroot),
+  "TBOT_LOGDIR": _safe(logdir),
+  "stack": [_safe(x) for x in traceback.format_stack(limit=25)]
+}
+
+# best-effort path: prefer TBOT_LOGDIR if present, else current dir
+out=None
+try:
+    if logdir:
+        out=os.path.join(logdir, "sitecustomize_boot.log")
+    else:
+        out=os.path.join(os.getcwd(), "sitecustomize_boot.log")
+    with open(out, "a", encoding="utf-8") as f:
+        f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+except Exception:
+    pass

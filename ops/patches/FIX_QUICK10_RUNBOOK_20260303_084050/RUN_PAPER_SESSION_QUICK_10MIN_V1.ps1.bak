@@ -1,0 +1,64 @@
+$ErrorActionPreference="Stop"
+
+function WL([string]$s){ Write-Host ("[{0}] {1}" -f (Get-Date -Format "HH:mm:ss"), $s) }
+
+$ROOT="C:\alpaca-bot\ORG_BOT_UNIFIED"
+$CODE="C:\alpaca-bot\ORG_BOT_UNIFIED\code"
+$RUNROOT="C:\alpaca-bot\ORG_BOT_UNIFIED\runtime\paper"
+$LOGDIR="C:\alpaca-bot\ORG_BOT_UNIFIED\runtime\paper\logs"
+$AUD="C:\alpaca-bot\ORG_BOT_UNIFIED\ops\audit\PAPER_QUICK_10MIN_20260303_081820"
+
+$PREFLIGHT="C:\alpaca-bot\ORG_BOT_UNIFIED\ops\runbooks\PAPER_PREFLIGHT_HARDENED_AND_PACK.ps1"
+$EXECUTOR="C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\paper\RUN_PAPER_EXECUTOR_TASK_V1.ps1"
+$POLL="C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\paper\RUN_PAPER_ORDER_POLL_TASK_V1.ps1"
+$TRACE="C:\alpaca-bot\ORG_BOT_UNIFIED\ops\runbooks\TRACE_PAPER_LOG_DESTINATIONS.ps1"
+$RECON="C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\paper\RECON_PAPER_V1.ps1"
+
+Set-Location $CODE
+$env:PYTHONPATH=$CODE
+$env:TBOT_RUNROOT=$RUNROOT
+$env:TBOT_LOGDIR=$LOGDIR
+
+$log = Join-Path $AUD "quick_run_log.txt"
+
+function RunStep([string]$name, [scriptblock]$sb){
+  $ts=Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+  ("== {0} @ {1} ==" -f $name, $ts) | Add-Content -LiteralPath $log -Encoding utf8
+  try{
+    $out = & $sb *>&1 | Out-String
+    $out | Add-Content -LiteralPath $log -Encoding utf8
+    ("EXITCODE=$LASTEXITCODE") | Add-Content -LiteralPath $log -Encoding utf8
+  } catch {
+    ("EXCEPTION=" + $_.Exception.Message) | Add-Content -LiteralPath $log -Encoding utf8
+    $_.ScriptStackTrace | Add-Content -LiteralPath $log -Encoding utf8
+    throw
+  }
+}
+
+WL "START QUICK_10MIN"
+WL "AUDITDIR=$AUD"
+WL "CWD=C:\alpaca-bot\ORG_BOT_UNIFIED\code"
+WL "RUNROOT=$RUNROOT"
+WL "LOGDIR=$LOGDIR"
+
+RunStep "PREFLIGHT" { & $PREFLIGHT }
+RunStep "TRACE_BEFORE" { & $TRACE }
+
+$end = (Get-Date).AddMinutes(10)
+$nextExec = Get-Date
+
+while((Get-Date) -lt $end){
+  if((Get-Date) -ge $nextExec){
+    RunStep "EXECUTOR_ONCE" { & $EXECUTOR }
+    $nextExec = (Get-Date).AddSeconds(60)
+  }
+
+  RunStep "POLL_ONCE" { & $POLL }
+  Start-Sleep -Seconds 10
+}
+
+RunStep "RECON" { & $RECON }
+RunStep "TRACE_AFTER" { & $TRACE }
+
+WL "RUN_DONE=OK"
+WL ("AUDIT_DIR=" + $AUD)

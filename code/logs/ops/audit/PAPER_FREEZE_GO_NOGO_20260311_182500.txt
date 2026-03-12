@@ -1,0 +1,8 @@
+NOTE=C:\alpaca-bot\ORG_BOT_UNIFIED\code\logs\ops\audit\PAPER_FREEZE_GO_NOGO_20260311_182500.txt
+TS_LOCAL=03/11/2026 18:25:00
+RUNROOT=C:\alpaca-bot\ORG_BOT_UNIFIED\runtime\paper
+LOGS=C:\alpaca-bot\ORG_BOT_UNIFIED\runtime\paper\logs
+FREEZE_ROOT=C:\alpaca-bot\ORG_BOT_UNIFIED\runtime\paper\logs\freeze
+
+[INFO] CREATED_FREEZE_ROOT
+[NO_GO] NO_FREEZE_ZIP_FOUND in C:\alpaca-bot\ORG_BOT_UNIFIED\runtime\paper\logs\freeze

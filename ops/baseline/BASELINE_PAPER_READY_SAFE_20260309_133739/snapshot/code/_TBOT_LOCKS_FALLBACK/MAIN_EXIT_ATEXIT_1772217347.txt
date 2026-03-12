@@ -1,0 +1,1 @@
+atexit\nargv=['C:\\alpaca-bot\\org_bot\\tbot\\main.py', '--smoke']\n

@@ -1,0 +1,454 @@
+from __future__ import annotations
+
+def _tbot_block_non_main_process():
+    import os, sys
+    try:
+        import multiprocessing as _mp
+        if _mp.current_process().name != "MainProcess":
+            sys.stderr.write(f"[SPAWN_BLOCK] non-main process name={_mp.current_process().name} pid={os.getpid()} -> exit 86\n")
+            raise SystemExit(86)
+    except Exception:
+        # if multiprocessing is unavailable, do not block
+        return
+
+_tbot_block_non_main_process()
+
+from tbot.runtime.single_instance import enforce_single_instance as _tbot_enforce_single_instance
+_tbot_enforce_single_instance()
+import argparse
+import os
+import sys
+from typing import Optional
+
+import os, sys, time
+def _tbot_single_instance_lock():
+    runroot = os.environ.get("TBOT_RUNROOT") or os.environ.get("RUNROOT") or os.path.join(os.getcwd(), "runtime", "paper")
+    lock_dir = os.path.join(runroot, "state", "locks")
+    os.makedirs(lock_dir, exist_ok=True)
+    lock_path = os.path.join(lock_dir, "TBOT_SINGLE_INSTANCE.lock")
+
+    try:
+        # Windows-friendly lock using msvcrt (non-blocking)
+        import msvcrt
+        f = open(lock_path, "a+", encoding="utf-8")
+        f.seek(0)
+        try:
+            msvcrt.locking(f.fileno(), msvcrt.LK_NBLCK, 1)
+        except OSError:
+            # Another instance holds the lock
+            print("[TBOT_SINGLE_INSTANCE] LOCK_HELD -> exiting 83", flush=True)
+            raise SystemExit(83)
+        f.truncate(0)
+        f.write(str(os.getpid()))
+        f.flush()
+        return f
+    except SystemExit:
+        raise
+    except Exception as e:
+        # If lock mechanism fails unexpectedly, fail-safe: exit to avoid multi-run
+        print("[TBOT_SINGLE_INSTANCE] LOCK_ERROR -> exiting 84: %r" % (e,), flush=True)
+        raise SystemExit(84)
+
+__TBOT_LOCK_FH = _tbot_single_instance_lock()
+
+# --- NONE_REASON_PROBE_V1 BEGIN ---
+def _diag_none_result(sid: str, core_ctx, alpha_mode, extra: dict | None = None) -> None:
+    try:
+        import os, json, time
+        if os.getenv("TBOT_DIAG_NONE", "0") != "1":
+            return
+        rec = {
+            "name": "none_reason_probe",
+            "ts": time.time(),
+            "sid": sid,
+            "core_ctx_keys": sorted(list(core_ctx.keys())) if isinstance(core_ctx, dict) else None,
+            "alpha_mode": alpha_mode,
+            "extra": extra or {},
+        }
+        print("DIAG|NONE_PROBE", json.dumps(rec, ensure_ascii=False))
+    except Exception:
+        pass
+# --- NONE_REASON_PROBE_V1 END ---
+
+
+# NOTE:
+# This module must NEVER call sys.exit()/raise SystemExit at import-time.
+# All exits must happen inside entrypoint().
+
+
+def _pop_force_signal_sid_inplace(argv: list[str]) -> Optional[str]:
+    """
+    Compatibility shim: allow passing raw arg like --force_signal_sid=SID
+    without requiring argparse to know it.
+    This function must NOT exit; it only edits argv in-place.
+    """
+    prefix = "--force_signal_sid="
+    i = 0
+    while i < len(argv):
+        a = argv[i]
+        if a.startswith(prefix):
+            sid = a[len(prefix):].strip()
+            del argv[i]
+            return sid or None
+        i += 1
+    return None
+
+
+def _abs_logs_path(*parts: str) -> str:
+    # logs relative to current working directory (org_bot)
+    return os.path.abspath(os.path.join(".", "logs", *parts))
+
+
+def _default_meta_path() -> str:
+    return _abs_logs_path("meta.jsonl")
+
+
+def _default_announce_path() -> str:
+    return _abs_logs_path("announce.log")
+
+
+def _default_ledger_dir() -> str:
+    return _abs_logs_path("trades")
+
+
+def _default_shadow_path() -> str:
+    return _abs_logs_path("shadow_plans.jsonl")
+
+
+def build_argparser() -> argparse.ArgumentParser:
+    ap = argparse.ArgumentParser(prog="tbot.main")
+
+    # Main modes
+    ap.add_argument("--smoke", action="store_true", help="print config/session summary and exit 0")
+    ap.add_argument("--run", action="store_true", help="run bot loop")
+    ap.add_argument("--emit_test_trade", action="store_true", help="emit a single test trade record and exit 0")
+
+    # Runtime loop
+    ap.add_argument("--iters", type=int, default=10)
+    ap.add_argument("--sleep", type=float, default=0.5)
+
+    # Outputs
+    ap.add_argument("--meta", type=str, default="")
+    ap.add_argument("--announce", type=str, default="")
+    ap.add_argument("--ledger_dir", type=str, default="")
+
+    # Shadow
+    ap.add_argument("--shadow", action="store_true")
+    ap.add_argument("--shadow_path", type=str, default="")
+    ap.add_argument("--shadow_risk_usd", type=float, default=250.0)
+    ap.add_argument("--shadow_max_qty", type=int, default=5000)
+    ap.add_argument("--shadow_entry", type=float, default=100.0)
+    ap.add_argument("--shadow_stop", type=float, default=99.0)
+    ap.add_argument("--shadow_tp", type=float, default=102.0)
+
+    # Force signal (test)
+    ap.add_argument("--force_signal", type=str, default="")
+    ap.add_argument("--force_signal_repeat", type=int, default=1)
+    ap.add_argument("--force_signal_ignore_session", type=int, default=0)
+    ap.add_argument("--force_signal_ignore_pre_close", type=int, default=0)
+
+    # Session simulation (test-only; default -1 means "use real logic")
+    ap.add_argument("--sim_in_session", type=int, default=-1)
+    ap.add_argument("--sim_pre_close", type=int, default=-1)
+    ap.add_argument("--sim_daily_r", type=float, default=0.0)
+    ap.add_argument("--sim_week_r", type=float, default=0.0)
+
+    # Gate controls
+    ap.add_argument("--gate_min_rr", type=float, default=1.0, help="min RR required to accept shadow plan")
+    ap.add_argument("--gate_min_conf", type=float, default=0.0, help="min confidence required to accept shadow plan")
+    ap.add_argument("--gate_cooldown_sec", type=int, default=60, help="cooldown seconds for same SID+symbol+side")
+    ap.add_argument("--gate_max_plans_per_day", type=int, default=20, help="max accepted plans per day")
+    ap.add_argument("--gate_max_risk_usd", type=float, default=500.0, help="max allowed risk_usd for shadow plan")
+
+    # P0_2_RISK_BUDGET_SPLIT_V3
+    # P0_2_1_DEDUP_AND_FALLBACK
+    # Split risk caps:
+    # - gate_max_risk_per_trade_usd: per-plan ceiling
+    # - gate_max_risk_per_day_usd: daily cumulative budget
+    # Backward compatible: if unset, both fall back to --gate_max_risk_usd.
+    ap.add_argument("--gate_max_risk_per_trade_usd", type=float, default=None,
+                    help="per-plan max risk_usd (defaults to --gate_max_risk_usd)")
+    ap.add_argument("--gate_max_risk_per_day_usd", type=float, default=None,
+                    help="daily total risk budget (defaults to --gate_max_risk_usd)")
+
+
+    # P0_2_RISK_BUDGET_SPLIT_V1
+    return ap
+
+
+def smoke() -> int:
+    cfg = load_config()
+    # Keep it minimal; QA checks for "SMOKE OK"
+    print(f"CFG env={cfg.env} symbols={list(cfg.symbols)}")
+    print(f"KILLS daily_alpha_kill_r={cfg.daily_alpha_kill_r} weekly_kill_r={cfg.weekly_kill_r}")
+    print("SMOKE OK")
+    return 0
+
+
+def main(argv: Optional[list[str]] = None) -> int:
+    if argv is None:
+        argv = sys.argv[1:]
+
+    # Extract optional v4 force sid without breaking imports.
+    raw_argv = list(argv)
+    fsid = _pop_force_signal_sid_inplace(raw_argv)
+
+    # Apply it into config if config exposes a global CFG
+    if fsid:
+        try:
+            from tbot.config import CFG as _CFG
+            setattr(_CFG, "force_signal_sid", str(fsid))
+        except Exception:
+            pass
+
+    ap = build_argparser()
+    args = ap.parse_args(raw_argv)
+
+    # P0_2_RISK_BUDGET_SPLIT_V1
+    # Back-compat: --gate_max_risk_usd historically existed; treat it as per-trade cap.
+    if getattr(args, "gate_max_risk_per_trade_usd", None) is None:
+        args.gate_max_risk_per_trade_usd = float(getattr(args, "gate_max_risk_usd", 0.0))
+    # If daily budget not provided, leave as None (no daily enforcement).
+    # --- TBOT_ENFORCE_SHADOW_LAST_V1 BEGIN ---
+    try:
+        import os as _os
+        # Enforce shadow pricing safety (Week2): mode=last unless explicitly overridden
+        if getattr(args, 'shadow', False):
+            if 'TBOT_SHADOW_LAST_STRICT' not in _os.environ:
+                _os.environ['TBOT_SHADOW_LAST_STRICT'] = '1'
+            mode = (_os.getenv('TBOT_SHADOW_PRICE_MODE','fixed') or 'fixed').strip().lower()
+            if mode != 'last' and (_os.getenv('TBOT_ALLOW_FIXED_SHADOW_PRICE','0') != '1'):
+                pass  # disabled hard-exit by SHADOW_PRICE_NO_HARDEXIT_BASE_V1
+    except SystemExit:
+        raise
+    except Exception:
+        # fail-closed
+        raise
+    # --- TBOT_ENFORCE_SHADOW_LAST_V1 END ---
+
+
+    # --- TBOT_PERSIST_CAP_V1 BEGIN ---
+    try:
+        import os as _TBOTos
+        from pathlib import Path as _TBOTPath
+        from tbot.runtime.gate_state import apply_persistent_gate_limits as _tbot_apply_persist
+        _tbot_root = str(_TBOTPath(__file__).resolve().parents[1])
+        # RUNROOT_OVERRIDE_V1 (separate paper/shadow by TBOT_RUNROOT)
+        _runroot = (_TBOTos.getenv('TBOT_RUNROOT','') or '').strip()
+        _root_dir = _runroot if _runroot else _tbot_root
+        _allow_fake = _TBOTos.getenv('TBOT_ALLOW_FAKE_START','0') == '1'
+        _tbot_apply_persist(args, root_dir=_root_dir, allow_fake_start=_allow_fake)
+    except SystemExit:
+        raise
+    except Exception:
+        # fail-closed if persist layer errors
+        raise
+    # --- TBOT_PERSIST_CAP_V1 END ---
+
+
+    cfg = load_config()
+
+    if args.smoke:
+        return smoke()
+
+    # Lazy imports for runtime-only paths (avoid import-time side-effects)
+    from tbot.runtime.ledger import TradeLedger
+    from tbot.runtime.ledger import make_trade_record
+    from tbot.runtime.announce import AnnounceWriter
+    from tbot.runtime.meta import MetaWriter
+    from tbot.runtime.session import SessionWindow
+    import tbot.runtime.orchestrator as o
+    from tbot.runtime.orchestrator import run_loop
+    # --- P0-1: harden logging & sanitize TBOT_FILELOG_PATH EARLY (before any policy/meta/persist) ---
+    try:
+        import os as _p01_os
+        import logging as _p01_logging
+        from pathlib import Path as _p01_Path
+
+        # If TBOT_FILELOG_PATH points to another repo/root (e.g., C:\ibkr-bot),
+        # rewrite to this project's ./logs to avoid cross-root mixed state.
+        _root = str(_p01_Path(__file__).resolve().parents[1])
+        _default = str(_p01_Path(_root) / "logs" / "bot_console_{date}.log")
+        _cur = (_p01_os.getenv("TBOT_FILELOG_PATH", "") or "").strip()
+        if (not _cur) or ("\\ibkr-bot\\" in _cur.lower()) or ("/ibkr-bot/" in _cur.lower()):
+            _p01_os.environ["TBOT_FILELOG_PATH"] = _default
+
+        # Never let logging emit crash the bot (guard Handler.emit)
+        _orig_emit = _p01_logging.Handler.emit
+        def _emit_guard(self, record):
+            try:
+                return _orig_emit(self, record)
+            except Exception:
+                try:
+                    _p01_logging.lastResort.handle(record)
+                except Exception:
+                    pass
+        _p01_logging.Handler.emit = _emit_guard
+
+        from tbot.runtime._shadow_observability import patch_logging_emit  # P0-1
+        patch_logging_emit()  # P0-1
+    except Exception:
+        # fail-open: logging instrumentation must never prevent a run
+        pass
+
+    ledger_dir = (args.ledger_dir or "").strip() or _default_ledger_dir()
+    meta_path = (args.meta or "").strip() or _default_meta_path()
+    announce_path = (args.announce or "").strip() or _default_announce_path()
+
+    shadow_path = (args.shadow_path or "").strip() or _default_shadow_path()
+
+    ledger = TradeLedger(base_dir=ledger_dir)
+
+    if args.emit_test_trade:
+        tr = make_trade_record(
+            event="OPEN",
+            env=cfg.env,
+            symbol="SPY",
+            sid="TEST",
+            side="LONG",
+            qty=1,
+            entry=100.0,
+            stop=99.0,
+            tp=102.0,
+            exit=None,
+            r=None,
+            reason="test_emit",
+        )
+        ledger.append(tr)
+        print(f"LEDGER OK: wrote test trade to {ledger_dir}")
+        return 0
+
+    if not args.run:
+        print("For testing use --smoke or --run or --emit_test_trade.")
+        return 0
+
+    sw = SessionWindow(
+        start_hhmm=cfg.session_start,
+        end_hhmm=cfg.session_end,
+        pre_close_minutes=cfg.pre_close_minutes,
+    )
+
+    # Test-only simulation overrides:
+    in_raw = int(getattr(args, "sim_in_session", -1))
+    pre_raw = int(getattr(args, "sim_pre_close", -1))
+    in_ov = None if in_raw < 0 else bool(in_raw)
+    pre_ov = None if pre_raw < 0 else bool(pre_raw)
+
+    if in_ov is not None or pre_ov is not None:
+        class _SimSessionWindow:
+            def __init__(self, base, in_override, pre_override):
+                self._base = base
+                self._in_override = in_override
+                self._pre_override = pre_override
+                self.start_hhmm = base.start_hhmm
+                self.end_hhmm = base.end_hhmm
+                self.pre_close_minutes = base.pre_close_minutes
+
+            def in_session(self, now):
+                if self._in_override is None:
+                    return self._base.in_session(now)
+                return bool(self._in_override)
+
+            def is_pre_close(self, now):
+                if not self.in_session(now):
+                    return False
+                if self._pre_override is None:
+                    return self._base.is_pre_close(now)
+                return bool(self._pre_override)
+
+        sw = _SimSessionWindow(sw, in_ov, pre_ov)
+
+    meta = MetaWriter(meta_path)
+    announce = AnnounceWriter(announce_path)
+
+    force_sid = (args.force_signal or "").strip().upper() or None
+
+    rc = run_loop(
+        meta=meta,
+        announce=announce,
+        ledger=ledger,
+        env=cfg.env,
+        symbols=tuple(cfg.symbols),
+        session=sw,
+        iterations=int(args.iters),
+        sleep_sec=float(args.sleep),
+        daily_alpha_kill_r=float(cfg.daily_alpha_kill_r),
+        weekly_kill_r=float(cfg.weekly_kill_r),
+        sim_daily_r=float(getattr(args,'sim_daily_r',0.0)),
+        sim_week_r=float(getattr(args,'sim_week_r',0.0)),
+        force_signal_sid=force_sid,
+        force_signal_repeat=int(getattr(args,'force_signal_repeat',1)),
+        force_signal_ignore_session=int(getattr(args,'force_signal_ignore_session',0)),
+        force_signal_ignore_pre_close=int(getattr(args,'force_signal_ignore_pre_close',0)),
+        shadow_enabled=bool(args.shadow),
+        shadow_path=shadow_path,
+        shadow_risk_usd=float(args.shadow_risk_usd),
+        shadow_max_qty=int(args.shadow_max_qty),
+        shadow_entry=float(args.shadow_entry),
+        shadow_stop=float(args.shadow_stop),
+        shadow_tp=float(args.shadow_tp),
+        gate_min_rr=float(args.gate_min_rr),
+        gate_min_conf=float(args.gate_min_conf),
+        gate_cooldown_sec=int(args.gate_cooldown_sec),
+        gate_max_plans_per_day=int(args.gate_max_plans_per_day),        # P0_2_RISK_BUDGET_SPLIT_V1
+        gate_max_risk_usd=float(args.gate_max_risk_usd),  # legacy alias
+        now_fn=o._now_et,
+    )
+
+    return int(rc) if isinstance(rc, int) else 0
+
+
+def entrypoint():
+    import sys
+    try:
+        return int(main())
+    except SystemExit as e:
+        import sys, os, traceback
+        # Always print, even if message is empty
+        try:
+            code = getattr(e, 'code', None)
+            print(f"[ENTRYPOINT_SYSTEMEXIT] repr={repr(e)} code={repr(code)} str={str(e)}", file=sys.stderr)
+            if os.getenv('TBOT_TRACE_SYSTEMEXIT','0') == '1':
+                traceback.print_exc()
+        except Exception:
+            pass
+        # Normalize exit code
+        code = getattr(e, 'code', 1)
+        try:
+            return int(code)
+        except Exception as e:
+            # Optional deep trace for unexpected exceptions
+            try:
+                import os as _os
+                if _os.getenv('TBOT_TRACE_ENTRYPOINT','0') == '1':
+                    import traceback as _tb
+                    import sys as _sys
+                    print('[ENTRYPOINT_EXCEPTION]', repr(e), file=_sys.stderr)
+                    _tb.print_exc()
+            except Exception:
+                pass
+            return 1
+    except KeyboardInterrupt:
+        return 130
+    except Exception as e:
+        try:
+            import os as _os, traceback as _tb, sys as _sys
+            if (_os.getenv('TBOT_TRACE_EXCEPTIONS','0') == '1'):
+                print('[ENTRYPOINT_EXCEPTION] ' + repr(e), file=_sys.stderr)
+                _tb.print_exc()
+        except Exception:
+            pass
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(entrypoint())
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,12 @@
+{
+  "version": "PATCHSPEC_V1",
+  "name": "SAFE_GOVERNANCE_MARKER_APPEND",
+  "target": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\ops\\task_wrappers\\ORG_UNIFIED_RUNTIME_MANAGER.ps1",
+  "rationale": "First real low-risk patch for governance framework validation",
+  "operations": [
+    {
+      "type": "prepend",
+      "text": "# PATCH_V1_MARKER: governance_test_safe\r\n"
+    }
+  ]
+}

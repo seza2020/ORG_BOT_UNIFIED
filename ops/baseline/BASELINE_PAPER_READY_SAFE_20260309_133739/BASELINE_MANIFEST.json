@@ -1,0 +1,20 @@
+{
+  "baseline_name": "BASELINE_PAPER_READY_SAFE_20260309_133739",
+  "created_at": "2026-03-09T13:38:21",
+  "root": "C:\\alpaca-bot\\ORG_BOT_UNIFIED",
+  "code_root": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\code",
+  "runtime_root": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\runtime\\paper",
+  "ops_root": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\ops",
+  "canonical_python": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\code\\.venv\\Scripts\\python.exe",
+  "excluded_from_ops_snapshot": [
+    "baseline",
+    "evidence"
+  ],
+  "excluded_from_ops_hash": [
+    "baseline",
+    "evidence"
+  ],
+  "fingerprint_dir": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\ops\\baseline\\BASELINE_PAPER_READY_SAFE_20260309_133739\\fingerprint",
+  "audit_dir": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\ops\\baseline\\BASELINE_PAPER_READY_SAFE_20260309_133739\\audit",
+  "rollback_script": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\ops\\baseline\\BASELINE_PAPER_READY_SAFE_20260309_133739\\rollback\\RESTORE_BASELINE.ps1"
+}

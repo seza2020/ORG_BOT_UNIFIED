@@ -1,0 +1,4 @@
+MANIFEST
+- Project:
+- Created:
+- Contents:

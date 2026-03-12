@@ -1,0 +1,80 @@
+﻿<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Enterprise Control Dashboard</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 20px; background: #fafafa; color: #111; }
+h1 { margin-bottom: 4px; }
+small { color: #555; }
+table { border-collapse: collapse; width: 100%; background: white; }
+th, td { border: 1px solid #ddd; padding: 8px; font-size: 13px; text-align: left; }
+th { background: #f0f0f0; position: sticky; top: 0; }
+.section { font-weight: bold; }
+.card { background: white; border: 1px solid #ddd; padding: 12px; margin-bottom: 16px; }
+</style>
+</head>
+<body>
+<h1>Enterprise Project Control Dashboard</h1>
+<small>Generated: 2026-03-11 15:13:17</small>
+
+<div class="card">
+<b>Runtime:</b> family_count=0 |
+<b>Regime:</b> CHOP |
+<b>Alpha:</b> OFF |
+<b>Bias:</b> LONG |
+<b>Realized P/L:</b> 0 R / realizedUsd
+</div>
+
+<table>
+<thead>
+<tr><th>Section</th><th>Metric</th><th>Value</th><th>Notes</th></tr>
+</thead>
+<tbody>
+<tr><td>Runtime</td><td>family_count</td><td>0</td><td></td></tr>
+<tr><td>Runtime</td><td>family_root_pids</td><td></td><td></td></tr>
+<tr><td>Runtime</td><td>lock_pid_present</td><td>False</td><td></td></tr>
+<tr><td>Runtime</td><td>last_heartbeat_ts</td><td>2026-03-11 13:00:56</td><td></td></tr>
+<tr><td>Runtime</td><td>meta_line_count</td><td>217445</td><td></td></tr>
+<tr><td>Runtime</td><td>perf_line_count</td><td>21805</td><td></td></tr>
+<tr><td>Market</td><td>regime</td><td>CHOP</td><td></td></tr>
+<tr><td>Market</td><td>confidence</td><td>0.3393</td><td></td></tr>
+<tr><td>Market</td><td>regime_reason</td><td>chop_spread(0.0002)</td><td></td></tr>
+<tr><td>Market</td><td>alpha_mode</td><td>OFF</td><td></td></tr>
+<tr><td>Market</td><td>alpha_reason</td><td>alpha_off_chop(ts=0.026)</td><td></td></tr>
+<tr><td>Market</td><td>bias</td><td>LONG</td><td></td></tr>
+<tr><td>Market</td><td>trend_strength</td><td>0.0257</td><td></td></tr>
+<tr><td>Market</td><td>vwap_state</td><td>ABOVE</td><td></td></tr>
+<tr><td>Market</td><td>ema_sep</td><td>0.000214</td><td></td></tr>
+<tr><td>Strategy</td><td>last_gate_decision</td><td>REJECT</td><td></td></tr>
+<tr><td>Strategy</td><td>last_gate_reason</td><td>alpha_mode_off</td><td></td></tr>
+<tr><td>Strategy</td><td>last_plan_sid</td><td>A_VALIDATION_PIPELINE_V1</td><td></td></tr>
+<tr><td>Strategy</td><td>last_skipped_sid</td><td></td><td></td></tr>
+<tr><td>Strategy</td><td>last_skipped_reason</td><td>alpha_mode_off</td><td></td></tr>
+<tr><td>Strategy</td><td>plan_created_count_tail</td><td>0</td><td></td></tr>
+<tr><td>Strategy</td><td>plan_skipped_count_tail</td><td>154</td><td></td></tr>
+<tr><td>Strategy</td><td>gate_accept_count_tail</td><td>71</td><td></td></tr>
+<tr><td>Strategy</td><td>chop_v1_eval_count_tail</td><td>103</td><td></td></tr>
+<tr><td>Strategy</td><td>chop_v1_plan_created_count_tail</td><td>0</td><td></td></tr>
+<tr><td>Strategy</td><td>chop_v1_rejected_count_tail</td><td>103</td><td></td></tr>
+<tr><td>PnL</td><td>realized_r_total</td><td>0</td><td></td></tr>
+<tr><td>PnL</td><td>realized_r_count</td><td>0</td><td></td></tr>
+<tr><td>PnL</td><td>risk_per_trade_usd</td><td>250</td><td></td></tr>
+<tr><td>PnL</td><td>realized_usd_total</td><td>0</td><td>Computed as realized_r_total * risk_per_trade_usd</td></tr>
+<tr><td>Risk</td><td>ledger_day_key</td><td>2026-03-11</td><td></td></tr>
+<tr><td>Risk</td><td>ledger_week_key</td><td>2026-W11</td><td></td></tr>
+<tr><td>Risk</td><td>daily_budget_used_r</td><td>1.25</td><td></td></tr>
+<tr><td>Risk</td><td>weekly_budget_used_r</td><td>1.25</td><td></td></tr>
+<tr><td>Risk</td><td>open_risk_r</td><td>0.5</td><td></td></tr>
+<tr><td>Risk</td><td>open_positions_count</td><td>0</td><td></td></tr>
+<tr><td>Risk</td><td>ledger_last_reason</td><td>smoke_release</td><td></td></tr>
+<tr><td>Stability</td><td>regime_exception_count_tail</td><td>0</td><td></td></tr>
+<tr><td>Reasons</td><td>top_reason_1</td><td>gate_rejected_upstream</td><td>count=415</td></tr>
+<tr><td>Reasons</td><td>top_reason_2</td><td>alpha_mode_off</td><td>count=248</td></tr>
+<tr><td>Reasons</td><td>top_reason_3</td><td>validation_runtime_active_v1</td><td>count=153</td></tr>
+<tr><td>Reasons</td><td>top_reason_4</td><td>signal_eval_runtime_v1</td><td>count=153</td></tr>
+<tr><td>Reasons</td><td>top_reason_5</td><td>core_context_from_snapshot_v1</td><td>count=153</td></tr>
+</tbody>
+</table>
+</body>
+</html>

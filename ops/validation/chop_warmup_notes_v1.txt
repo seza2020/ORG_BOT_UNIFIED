@@ -1,0 +1,27 @@
+CHOP WARMUP NOTES V1
+
+RATIONALE
+Current market state is dominantly CHOP.
+Trend warmup is operationally healthy but non-productive.
+This profile exists only to gather paper evidence under CHOP conditions.
+
+APPROVED PARAMETERS
+target_regime=CHOP
+confidence_threshold=0.30
+min_rr=1.5
+max_plans_per_day=6
+cooldown_seconds=240
+risk_per_trade_r=0.25
+daily_kill_r=-1.0
+alpha_policy=ALLOW_CAP50_ONLY_IN_CHOP
+
+NOT APPROVED
+No live use
+No ON forcing
+No RR below 1.5
+No risk_per_trade above 0.25R
+
+SUCCESS CRITERIA
+PlanCreated > 0
+Trades > 0
+Collect 10-20 valid samples

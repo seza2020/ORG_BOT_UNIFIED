@@ -1,0 +1,19 @@
+=== COMPILEALL ===
+C:\alpaca-bot\ORG_BOT_UNIFIED\code\tbot\analytics\perf_tracker.py:182: SyntaxWarning: invalid escape sequence '\<'
+  - ثبت در runtime\<profile>\analytics\performance.json
+*** Error compiling 'C:\\alpaca-bot\\ORG_BOT_UNIFIED\\code\\tbot\\main.py'...
+  File "C:\alpaca-bot\ORG_BOT_UNIFIED\code\tbot\main.py", line 68
+    p.add_argument("--run", action="store_true", help="run orchestrator loop")
+SyntaxError: expected 'except' or 'finally' block
+
+COMPILEALL_OK= False
+
+=== IMPORT ===
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import tbot.main; print('IMPORT_OK=1')
+    ^^^^^^^^^^^^^^^^
+  File "C:\alpaca-bot\ORG_BOT_UNIFIED\code\tbot\main.py", line 68
+    p.add_argument("--run", action="store_true", help="run orchestrator loop")
+SyntaxError: expected 'except' or 'finally' block
+

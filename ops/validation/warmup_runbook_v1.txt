@@ -1,0 +1,37 @@
+WARMUP RUNBOOK V1
+
+MODE=PAPER_WARMUP
+PRIMARY_OBJECTIVE=DATA_ACQUISITION_FOR_VALIDATION
+
+PROFILE
+confidence_threshold=0.30
+min_rr=1.5
+max_plans_per_day=10
+cooldown_seconds=180
+risk_per_trade_r=0.5
+daily_kill_r=-1.5
+alpha_policy=ALLOW_ON_AND_CAP50
+
+PRE_SESSION_CHECKS
+1. verify runtime stable
+2. verify single family active
+3. verify risk ledger exists
+4. verify warmup profile present
+5. verify meta/perf logging active
+
+IN_SESSION_MONITORING
+1. monitor plan_created
+2. monitor plan_skipped
+3. monitor alpha_mode_off
+4. monitor CAP50 participation
+5. monitor daily kill threshold
+
+POST_SESSION_REVIEW
+1. compute trade count
+2. compute expectancy
+3. compute PF
+4. compute DD
+5. compute rejection distribution
+
+WARMUP_END_CONDITION
+Trades >= 40 OR 10 trading days

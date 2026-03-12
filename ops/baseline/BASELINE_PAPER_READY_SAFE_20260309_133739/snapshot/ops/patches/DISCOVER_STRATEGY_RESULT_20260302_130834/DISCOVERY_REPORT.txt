@@ -1,0 +1,76 @@
+
+Pattern         Path                                                                                   LineNumber Line
+-------         ----                                                                                   ---------- ----
+def make_event  C:\alpaca-bot\ORG_BOT_UNIFIED\code\tbot\runtime\events.py                                      71 def make_event(*, level: EventLevel, kind: str, payload: dict[str, Any], run_id: str | None = None) -> Ev…
+emit_event      C:\alpaca-bot\ORG_BOT_UNIFIED\code\tbot\runtime\risk_ledger.py                                216     def emit_event(self, kind: str, *, ts: str = None, run_id: str = "", day: str = None, **fields) -> bo…
+emit_event      C:\alpaca-bot\ORG_BOT_UNIFIED\code\tbot\runtime\risk_ledger.py                                240         return self.emit_event("run_start", ts=ts, run_id=run_id, **fields)
+emit_event      C:\alpaca-bot\ORG_BOT_UNIFIED\code\tbot\runtime\risk_ledger.py                                243         return self.emit_event("run_end", ts=ts, run_id=run_id, exit_code=exit_code, **fields)
+emit_event      C:\alpaca-bot\ORG_BOT_UNIFIED\code\tbot\runtime\risk_ledger.py                                246         return self.emit_event("session_start", ts=ts, run_id=run_id, session=session, **fields)
+emit_event      C:\alpaca-bot\ORG_BOT_UNIFIED\code\tbot\runtime\risk_ledger.py                                249         return self.emit_event("session_end", ts=ts, run_id=run_id, session=session, **fields)
+emit_event      C:\alpaca-bot\ORG_BOT_UNIFIED\code\tbot\runtime\risk_ledger.py                                253         return self.emit_event("gate_snapshot", ts=ts, run_id=run_id, **fields)
+emit_event      C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_orch_gate_snapshot_b1.py                       127                 # fallback: emit_event if it exists
+emit_event      C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_orch_gate_snapshot_b1.py                       128                 if hasattr(_rl, "emit_event"):
+emit_event      C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_orch_gate_snapshot_b1.py                       129                     _rl.emit_event(
+emit_event      C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_risk_ledger_lifecycle_b1_v1.py                  46     def emit_event(self, kind: str, *, ts: str = None, run_id: str = "", day: str = None, **fields) -> bo…
+emit_event      C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_risk_ledger_lifecycle_b1_v1.py                  70         return self.emit_event("run_start", ts=ts, run_id=run_id, **fields)
+emit_event      C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_risk_ledger_lifecycle_b1_v1.py                  73         return self.emit_event("run_end", ts=ts, run_id=run_id, exit_code=exit_code, **fields)
+emit_event      C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_risk_ledger_lifecycle_b1_v1.py                  76         return self.emit_event("session_start", ts=ts, run_id=run_id, session=session, **fields)
+emit_event      C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_risk_ledger_lifecycle_b1_v1.py                  79         return self.emit_event("session_end", ts=ts, run_id=run_id, session=session, **fields)
+emit_event      C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_risk_ledger_lifecycle_b1_v1.py                  83         return self.emit_event("gate_snapshot", ts=ts, run_id=run_id, **fields)
+emit_event      C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_risk_ledger_lifecycle_v1.py                     21 # We will inject a small helper emit_event + lifecycle wrappers.
+emit_event      C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_risk_ledger_lifecycle_v1.py                     37     def emit_event(self, kind: str, **fields):
+emit_event      C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_risk_ledger_lifecycle_v1.py                     78         return self.emit_event("run_start", run_id=run_id, **fields)
+emit_event      C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_risk_ledger_lifecycle_v1.py                     81         return self.emit_event("run_end", run_id=run_id, exit_code=exit_code, **fields)
+emit_event      C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_risk_ledger_lifecycle_v1.py                     84         return self.emit_event("session_start", session=session, **fields)
+emit_event      C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_risk_ledger_lifecycle_v1.py                     87         return self.emit_event("session_end", session=session, **fields)
+emit_event      C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_risk_ledger_lifecycle_v1.py                     91         return self.emit_event("gate_snapshot", **fields)
+emit_event      C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\risk_ledger_lifecycle_selftest_v1.py                  25     # fallback: just pass path via emit_event(fields)
+make_event\(    C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_kill_change_levels_v2.py                        10     pat = r'(make_event\(\s*)(?P<head>.*?kind\s*=\s*["\']' + re.escape(kind) + r'["\'].*?\))'
+make_event\(    C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_kill_change_levels_v2.py                        16         return re.sub(r'make_event\(\s*', 'make_event(level="INFO", ', block, count=1)
+make_event\(    C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_kill_change_levels.py                           10     r'make_event\(\s*level\s*=\s*["\'](INFO|WARN|ERROR)["\']\s*,\s*kind\s*=\s*["\']alpha_kill_change["\']…
+make_event\(    C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_kill_change_levels.py                           17     r'make_event\(\s*level\s*=\s*["\'](INFO|WARN|ERROR)["\']\s*,\s*kind\s*=\s*["\']portfolio_kill_change[…
+make_event\(    C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_kill_switch_levels.py                           13     r"(make_event\(\s*level\s*=\s*['\"])(ERROR|WARN)(['\"],\s*kind\s*=\s*['\"]portfolio_kill_change['\"])…
+make_event\(    C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_kill_switch_levels.py                           20     r"(make_event\(\s*level\s*=\s*['\"])(ERROR|WARN)(['\"],\s*kind\s*=\s*['\"]alpha_kill_change['\"])",
+make_event\(    C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_kill_switch_levels2.py                          14         r"make_event\((?P<body>[^)]*?\bkind\s*=\s*['\"]" + re.escape(kind_name) + r"['\"][^)]*?)\)",
+make_event\(    C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_orch_fix_killswitch_stray_obs_none.py           33 evm = list(re.finditer(r"(?m)^([ \t]+)ev\s*=\s*make_event\(", w[:m.start()]))
+make_event\(    C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_orch_fix_stray_obs_in_forced_disable.py         38 m_ev = re.search(r"(?m)^([ \t]*)ev\s*=\s*make_event\(", window)
+strategy_result C:\alpaca-bot\ORG_BOT_UNIFIED\code\tbot\runtime\events.py                                       8         if kind == "strategy_result" and isinstance(payload, dict):
+strategy_result C:\alpaca-bot\ORG_BOT_UNIFIED\code\tbot\runtime\events.py                                      40     "strategy_result",
+strategy_result C:\alpaca-bot\ORG_BOT_UNIFIED\code\tbot\runtime\orchestrator.py                              1790                     ev = make_event(level="INFO", kind="strategy_result", payload={
+strategy_result C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\ops\PATCH_ORCH_SIGPAYLOAD_MISSING_AST_V1.py           19 # find the string "strategy_result" in code by locating meta.emit({... "kind":"strategy_result" ...})
+strategy_result C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\ops\PATCH_ORCH_SIGPAYLOAD_MISSING_AST_V1.py           26             # look for dict literal with "kind": "strategy_result"
+strategy_result C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\ops\PATCH_ORCH_SIGPAYLOAD_MISSING_AST_V1.py           32                         if isinstance(k, ast.Constant) and k.value == "kind" and isinstance(v, ast.Consta…
+strategy_result C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\ops\PATCH_ORCH_SIGPAYLOAD_MISSING_AST_V1.py           40 # fallback: just find first occurrence of the literal string strategy_result anywhere
+strategy_result C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\ops\PATCH_ORCH_SIGPAYLOAD_MISSING_AST_V1.py           43         if isinstance(n, ast.Constant) and n.value == "strategy_result":
+strategy_result C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\ops\PATCH_ORCH_SIGPAYLOAD_MISSING_AST_V1.py           52     print("ERROR: could not locate strategy_result emission in AST")
+strategy_result C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_add_strategy_result_event.py                     1 # File: tools/patch_add_strategy_result_event.py
+strategy_result C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_add_strategy_result_event.py                    13     if 'kind="strategy_result"' in txt or "kind='strategy_result'" in txt:
+strategy_result C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_add_strategy_result_event.py                    31         f"{indent}    ev = make_event(level='INFO', kind='strategy_result', payload={{\n"
+strategy_result C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_add_strategy_result.py                          12 MARK = 'kind="strategy_result"'
+strategy_result C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_add_strategy_result.py                          21 {indent}    ev = make_event(level="INFO", kind="strategy_result", payload={{
+strategy_result C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_add_strategy_result.py                          45         print("PATCH_SKIP: strategy_result already present")
+strategy_result C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_add_strategy_result.py                          62     bak = TARGET.with_suffix(f".py.bak_strategy_result_{ts}")
+strategy_result C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_add_strategy_result.py                          66     print(f"PATCH_OK: wrote strategy_result block | backup={bak}")
+strategy_result C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_obs_reason_none_v1.py                           20 # Heuristic: find the log line that prints strategy_result {... 'returned': ... 'reason': ...}
+strategy_result C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_obs_reason_none_v1.py                           22 anchor = re.search(r"strategy_result\s*\{", txt)
+strategy_result C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_obs_reason_none_v1.py                           24     # fallback: search for literal 'strategy_result' in file
+strategy_result C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_obs_reason_none_v1.py                           25     anchor = re.search(r"strategy_result", txt)
+strategy_result C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_obs_reason_none_v1.py                           27     print("FAIL: cannot find strategy_result logging anchor")
+strategy_result C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_obs_reason_none_v1.py                           30 # We will insert a small helper block near the first occurrence of "strategy_result"
+strategy_result C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_obs_reason_none_v1.py                           63 # We need to locate where sr dict is built; usually variable name is sr or strategy_result dict.
+strategy_result C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_obs_reason_none_v2.py                           20 # Anchor: the strategy_result payload creation contains this exact pattern (you showed line 1649)
+strategy_result C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_obs_reason_none_v2.py                           28 # Common pattern: logger.info("strategy_result", payload={...}) OR payload=payload
+strategy_result C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_obs_reason_none_v2.py                           33 # First try: find the surrounding dict literal block "strategy_result", payload={ ... }
+strategy_result C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_obs_reason_none_v2.py                           37 # Case: logger.info("strategy_result", payload=payload) with a `payload = {...}` nearby
+strategy_result C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_obs_reason_none_v2.py                           40 m_log = re.search(r'logger\.info\(\s*["\']strategy_result["\']\s*,\s*payload\s*=\s*([a-zA-Z_]\w*)', after)
+strategy_result C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_obs_reason_none_v2.py                           43     # insert normalization right before the logger call (at the start of 'logger.info("strategy_result"..…
+strategy_result C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_orch_strategy_result_event.py                    1 # File: tools/patch_orch_strategy_result_event.py
+strategy_result C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_orch_strategy_result_event.py                   18     if "kind=\"strategy_result\"" in txt or "kind='strategy_result'" in txt:
+strategy_result C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_orch_strategy_result_event.py                   40 {indent}    ev = make_event(level="INFO", kind="strategy_result", payload={{
+strategy_result C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_strategy_result_self_contained.py                1 # File: tools/patch_strategy_result_self_contained.py
+strategy_result C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_strategy_result_self_contained.py               13     if "kind='strategy_result'" not in txt and 'kind="strategy_result"' not in txt:
+strategy_result C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_strategy_result_self_contained.py               17     if "PATCH_STRATEGY_RESULT_SELF_CONTAINED=1" in txt:
+strategy_result C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_strategy_result_self_contained.py               20     # Find the strategy_result block (we inserted it previously)
+strategy_result C:\alpaca-bot\ORG_BOT_UNIFIED\code\tools\patch_strategy_result_self_contained.py               30         "    # PATCH_STRATEGY_RESULT_SELF_CONTAINED=1\n"
+
+

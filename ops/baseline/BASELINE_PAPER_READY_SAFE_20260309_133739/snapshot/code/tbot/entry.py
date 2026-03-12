@@ -1,0 +1,52 @@
+# DISABLED_ENTRY_SINGLETON_GUARD_V1
+from __future__ import annotations
+# --- TBOT_FAILCLOSED_RUNROOT_GUARD (V2) ---
+import os as _os
+def _tbot_require_runroot():
+    rr = (_os.environ.get("TBOT_RUNROOT") or "").strip()
+    if not rr:
+        raise SystemExit(2)
+_tbot_require_runroot()
+# --- /TBOT_FAILCLOSED_RUNROOT_GUARD ---
+
+import argparse
+import os
+import sys
+import time
+import traceback
+
+def build_argparser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(prog="tbot")
+    p.add_argument("--profile", default=os.environ.get("TBOT_PROFILE","PAPER"))
+    p.add_argument("--run", action="store_true")
+    p.add_argument("--iters", type=int, default=999999)
+    p.add_argument("--sleep", type=float, default=0.5)
+    return p
+
+def entrypoint(argv: list[str] | None = None) -> int:
+    argv = argv if argv is not None else sys.argv[1:]
+    args = build_argparser().parse_args(argv)
+
+    # Late import to avoid import-time side effects
+    from tbot.runtime.orchestrator import run_loop
+
+    try:
+        run_loop(
+            profile=str(args.profile).upper(),
+            iters=int(args.iters),
+            sleep=float(args.sleep),
+        )
+        return 0
+    except SystemExit:
+        raise
+    except Exception:
+        traceback.print_exc()
+        return 1
+
+def main() -> None:
+    raise SystemExit(entrypoint())
+
+if __name__ == "__main__":
+    main()
+
+

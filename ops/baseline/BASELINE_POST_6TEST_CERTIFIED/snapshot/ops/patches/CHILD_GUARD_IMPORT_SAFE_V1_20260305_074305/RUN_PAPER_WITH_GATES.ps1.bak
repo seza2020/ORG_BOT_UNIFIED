@@ -1,0 +1,68 @@
+# RUN_PAPER_WITH_GATES.ps1 (KNOWN-GOOD V3)
+# Marker: TBOT_WRAPPER_REBUILD_KNOWNGOOD_V3
+
+$ErrorActionPreference="Stop"
+
+$ROOT = "C:\alpaca-bot\ORG_BOT_UNIFIED"
+$CODE = Join-Path $ROOT "code"
+$RUNTIME_PAPER = Join-Path $ROOT "runtime\paper"
+$PY = Join-Path $CODE ".venv\Scripts\python.exe"
+
+if(!(Test-Path $PY)){ throw "PY_NOT_FOUND=$PY" }
+if(!(Test-Path $CODE)){ throw "CODE_NOT_FOUND=$CODE" }
+if(!(Test-Path $RUNTIME_PAPER)){ throw "RUNTIME_PAPER_NOT_FOUND=$RUNTIME_PAPER" }
+
+# Hard-bind
+$env:PYTHONPATH = $CODE
+$env:TBOT_RUNROOT = $RUNTIME_PAPER
+
+# Optional single instance guard (wrapper-level)
+$GUARD = Join-Path $ROOT "ops\runbooks\SINGLE_INSTANCE_GUARD.ps1"
+if(Test-Path $GUARD){
+  & $GUARD | Out-Null
+}
+
+# iters/sleep override
+$iters = 999999
+$sleep = 0.5
+if($env:TBOT_ITERS -and $env:TBOT_ITERS -match '^\d+$'){ $iters = [int]$env:TBOT_ITERS }
+if($env:TBOT_SLEEP -and $env:TBOT_SLEEP -match '^\d+(\.\d+)?$'){ $sleep = [double]$env:TBOT_SLEEP }
+
+# logs
+$LOGDIR = Join-Path $RUNTIME_PAPER "logs"
+New-Item -ItemType Directory -Force $LOGDIR | Out-Null
+$wrapOut = Join-Path $LOGDIR "wrapper_stdout_stderr.txt"
+$wrapMeta = Join-Path $LOGDIR "wrapper_meta.txt"
+$gates = Join-Path $LOGDIR "gates_wrapper.txt"
+
+"TS=$(Get-Date -Format o)" | Out-File $wrapMeta -Encoding UTF8
+"PY=$PY" | Add-Content $wrapMeta
+"PYTHONPATH=$($env:PYTHONPATH)" | Add-Content $wrapMeta
+"TBOT_RUNROOT=$($env:TBOT_RUNROOT)" | Add-Content $wrapMeta
+"ITERS=$iters" | Add-Content $wrapMeta
+"SLEEP=$sleep" | Add-Content $wrapMeta
+
+# gates
+"=== COMPILEALL ===" | Out-File $gates -Encoding UTF8
+Push-Location $CODE
+try{
+  & $PY -c "import sys,compileall; ok=compileall.compile_dir(r'$CODE\tbot', quiet=0, force=True); print('COMPILEALL_OK=',ok); sys.exit(0 if ok else 2)" 2>&1 |
+    Out-String | Add-Content $gates
+} finally { Pop-Location }
+
+"=== IMPORT ===" | Add-Content $gates
+& $PY -c "import tbot.main; print('IMPORT_OK=1')" 2>&1 |
+  Out-String | Add-Content $gates
+
+"=== ENTRY_HELP ===" | Add-Content $gates
+& $PY -m tbot.main 2>&1 |
+  Out-String | Add-Content $gates
+
+if((Select-String -LiteralPath $gates -Pattern 'COMPILEALL_OK=\s*True' -Quiet) -ne $true){ throw "GATE_FAIL_COMPILEALL" }
+if((Select-String -LiteralPath $gates -Pattern 'IMPORT_OK=1' -Quiet) -ne $true){ throw "GATE_FAIL_IMPORT" }
+
+# run
+& $PY -m tbot.main --run --iters $iters --sleep $sleep 2>&1 |
+  Tee-Object -FilePath $wrapOut
+
+exit 0

@@ -1,0 +1,52 @@
+﻿# sitecustomize.py (ORG_BOT_UNIFIED)
+# Auto-imported by Python at startup if present on sys.path.
+# We use it to prevent re-entry/self-spawn of: python -m tbot.main --run
+
+import os
+import sys
+import time
+
+LOG_PATH = r"C:\alpaca-bot\ORG_BOT_UNIFIED\runtime\paper\logs\py_single_instance_guard.log"
+MUTEX_NAME = r"Global\ORG_BOT_UNIFIED_TBOT_MAIN_RUN"
+
+def _log(msg: str) -> None:
+    try:
+        os.makedirs(os.path.dirname(LOG_PATH), exist_ok=True)
+        with open(LOG_PATH, "a", encoding="utf-8") as f:
+            f.write(f"{time.strftime('%Y-%m-%dT%H:%M:%S')} {msg}\n")
+    except Exception:
+        pass
+
+def _is_target_run() -> bool:
+    # Trigger only for runtime run mode. Do NOT block smoke/tests.
+    argv = " ".join(sys.argv).lower()
+    return ("tbot.main" in argv) and ("--run" in argv)
+
+def _acquire_mutex_or_exit() -> None:
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        CreateMutexW = ctypes.windll.kernel32.CreateMutexW
+        CreateMutexW.argtypes = [wintypes.LPVOID, wintypes.BOOL, wintypes.LPCWSTR]
+        CreateMutexW.restype = wintypes.HANDLE
+
+        GetLastError = ctypes.windll.kernel32.GetLastError
+
+        h = CreateMutexW(None, True, MUTEX_NAME)
+        err = GetLastError()
+
+        # ERROR_ALREADY_EXISTS = 183
+        if h and err == 183:
+            _log("BLOCK: mutex already exists; argv=" + repr(sys.argv))
+            raise SystemExit(0)
+        else:
+            _log("ALLOW: mutex acquired; pid=" + str(os.getpid()) + "; argv=" + repr(sys.argv))
+    except SystemExit:
+        raise
+    except Exception as e:
+        # Fail-open: do not prevent runtime if mutex fails.
+        _log("WARN: mutex guard error (fail-open): " + repr(e))
+
+if _is_target_run():
+    _acquire_mutex_or_exit()

@@ -1,0 +1,9 @@
+PAPER VALIDATION REPORT V1
+
+Trades=0
+Wins=0
+Losses=0
+Total_R=0
+Expectancy_R=0
+ProfitFactor=0
+MaxDrawdown_R=0

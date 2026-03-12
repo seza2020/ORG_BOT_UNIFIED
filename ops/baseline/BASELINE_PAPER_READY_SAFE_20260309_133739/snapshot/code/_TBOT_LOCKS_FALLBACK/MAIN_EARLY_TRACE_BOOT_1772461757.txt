@@ -1,0 +1,1 @@
+BOOT\nargv=['C:\\alpaca-bot\\ORG_BOT_UNIFIED\\code\\tbot\\main.py', '--smoke']\nrunroot=None\n

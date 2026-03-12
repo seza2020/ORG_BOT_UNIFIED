@@ -1,0 +1,13 @@
+# ERROR_TAGS
+
+Use consistent tags for post-run classification:
+- DATA_MISSING
+- OUT_OF_SESSION
+- ALPHA_OFF
+- REGIME_BLOCK
+- RISK_BLOCK
+- EXEC_FAIL
+- RECONNECT
+- DUPLICATE_GUARD
+- TIME_SYNC
+- UNKNOWN

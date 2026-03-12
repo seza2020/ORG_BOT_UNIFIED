@@ -1,0 +1,27 @@
+{
+  "source": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\runtime\\paper\\validation_v2\\outcome_ledger.jsonl",
+  "records_seen": 2,
+  "top_level_keys": {
+    "ts": 2,
+    "plan_key": 2,
+    "source_run_id": 2,
+    "config_id": 2,
+    "sid": 2,
+    "symbol": 2,
+    "side": 2,
+    "bias": 2,
+    "entry": 2,
+    "stop": 2,
+    "tp": 2,
+    "rr_planned": 2,
+    "confidence": 2,
+    "regime": 2,
+    "alpha_mode": 2,
+    "trend_strength": 2,
+    "status": 2,
+    "realized_r": 2,
+    "outcome_source": 2,
+    "notes": 2
+  },
+  "nested_keys": {}
+}

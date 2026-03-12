@@ -1,0 +1,112 @@
+﻿{
+    "ts":  "2026-03-11 15:13:17",
+    "runtime":  {
+                    "family_count":  0,
+                    "families":  [
+
+                                 ],
+                    "last_heartbeat_ts":  "2026-03-11 13:00:56",
+                    "meta_line_count":  217445,
+                    "perf_line_count":  21805
+                },
+    "market":  {
+                   "regime":  "CHOP",
+                   "confidence":  0.3393,
+                   "regime_reason":  "chop_spread(0.0002)",
+                   "alpha_mode":  "OFF",
+                   "alpha_reason":  "alpha_off_chop(ts=0.026)",
+                   "bias":  "LONG",
+                   "trend_strength":  0.0257,
+                   "vwap_state":  "ABOVE",
+                   "ema_sep":  0.000214
+               },
+    "strategy":  {
+                     "last_gate_decision":  "REJECT",
+                     "last_gate_reason":  "alpha_mode_off",
+                     "last_plan":  {
+                                       "ts":  "2026-03-10 07:37:07",
+                                       "level":  "INFO",
+                                       "kind":  "plan_created",
+                                       "run_id":  null,
+                                       "payload":  {
+                                                       "ts":  "2026-03-10 07:37:07",
+                                                       "run_id":  null,
+                                                       "sid":  "A_VALIDATION_PIPELINE_V1",
+                                                       "symbol":  "SPY",
+                                                       "side":  "SELL",
+                                                       "entry":  679.1,
+                                                       "stop":  682.4955,
+                                                       "tp":  672.309,
+                                                       "rr":  2.0,
+                                                       "confidence":  0.3396,
+                                                       "reason":  "validation_plan_live_snapshot_v1",
+                                                       "regime":  "CHOP",
+                                                       "bias":  "SHORT",
+                                                       "alpha_mode":  "OFF",
+                                                       "price_ref":  {
+                                                                         "last":  679.1,
+                                                                         "vwap":  676.485806,
+                                                                         "ema_fast":  676.4755072774341,
+                                                                         "ema_slow":  676.617423233743
+                                                                     }
+                                                   }
+                                   },
+                     "last_skipped":  {
+                                          "ts":  "2026-03-11 13:00:56",
+                                          "level":  "INFO",
+                                          "kind":  "plan_skipped",
+                                          "run_id":  null,
+                                          "payload":  {
+                                                          "reason":  "alpha_mode_off",
+                                                          "symbol":  "SPY"
+                                                      }
+                                      },
+                     "plan_created_count_tail":  0,
+                     "plan_skipped_count_tail":  154,
+                     "gate_accept_count_tail":  71,
+                     "chop_v1_eval_count_tail":  103,
+                     "chop_v1_plan_created_count_tail":  0,
+                     "chop_v1_rejected_count_tail":  103
+                 },
+    "pnl":  {
+                "realized_r_total":  0,
+                "realized_r_count":  0,
+                "risk_per_trade_usd":  250,
+                "realized_usd_total":  0
+            },
+    "risk":  {
+                 "ledger_version":  1,
+                 "run_id":  "STEP6B_TEST",
+                 "last_update_ts":  "2026-03-11T00:35:03Z",
+                 "day_key":  "2026-03-11",
+                 "week_key":  "2026-W11",
+                 "daily_budget_used_r":  1.25,
+                 "weekly_budget_used_r":  1.25,
+                 "open_risk_r":  0.5,
+                 "open_positions_count":  0,
+                 "last_reason":  "smoke_release",
+                 "load_error":  ""
+             },
+    "top_reasons":  [
+                        {
+                            "reason":  "gate_rejected_upstream",
+                            "count":  415
+                        },
+                        {
+                            "reason":  "alpha_mode_off",
+                            "count":  248
+                        },
+                        {
+                            "reason":  "validation_runtime_active_v1",
+                            "count":  153
+                        },
+                        {
+                            "reason":  "signal_eval_runtime_v1",
+                            "count":  153
+                        },
+                        {
+                            "reason":  "core_context_from_snapshot_v1",
+                            "count":  153
+                        }
+                    ]
+}

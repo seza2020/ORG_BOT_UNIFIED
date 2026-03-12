@@ -1,0 +1,11 @@
+{
+  "version": "PATCHSPEC_V6",
+  "name": "ATOMIC_RISK_LEDGER",
+  "target": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\ops\\task_wrappers\\ORG_UNIFIED_RUNTIME_MANAGER.ps1",
+  "operations": [
+    {
+      "type": "append",
+      "text": "\r\n# PATCH_V6_ATOMIC_RISK_LEDGER_BEGIN\ntry{\n\n$ledger=\"C:\\alpaca-bot\\ORG_BOT_UNIFIED\\runtime\\paper\\state\\risk_ledger_atomic.json\"\n$dir=Split-Path $ledger\nNew-Item -ItemType Directory -Force $dir|Out-Null\n\n$run_id=[guid]::NewGuid().ToString()\n\nif(!(Test-Path $ledger)){\n    $init=[ordered]@{\n        kind=\"atomic_risk_ledger_v6\"\n        created_ts=(Get-Date).ToString(\"s\")\n        pid=$PID\n        run_id=$run_id\n        profile=$env:TBOT_PROFILE\n    }\n    $tmp=\"$ledger.tmp\"\n    ($init|ConvertTo-Json -Compress)|Set-Content $tmp -Encoding UTF8\n    Move-Item $tmp $ledger -Force\n}else{\n    $existing=Get-Content $ledger -Raw | ConvertFrom-Json\n    if($existing.pid -and ($existing.pid -ne $PID)){\n        Write-Host \"Atomic ledger already owned by PID=$($existing.pid)\"\n    }\n}\n\n}catch{\nWrite-Host \"Atomic ledger guard failure\"\n}\n# PATCH_V6_ATOMIC_RISK_LEDGER_END\r\n"
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+from __future__ import annotations
+
+import argparse
+import os
+import sys
+import traceback
+
+BANNER = "TBOT Trading Runtime (Enterprise CLI)"
+
+def build_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(prog="tbot.main", description=BANNER)
+    p.add_argument("--smoke", action="store_true", help="print identity/session info and exit 0")
+    p.add_argument("--run", action="store_true", help="run orchestrator loop")
+    p.add_argument("--iters", type=int, default=int(os.environ.get("TBOT_ITERS", "999999")), help="max iterations")
+    p.add_argument("--sleep", type=float, default=float(os.environ.get("TBOT_SLEEP", "0.5")), help="sleep seconds")
+    return p
+
+def smoke() -> int:
+    print("TBOT_SMOKE_OK")
+    print("CWD=", os.getcwd())
+    print("PYTHONPATH=", os.environ.get("PYTHONPATH"))
+    print("TBOT_RUNROOT=", os.environ.get("TBOT_RUNROOT"))
+    print("SYS_EXEC=", sys.executable)
+    return 0
+
+def _tbot_child_spawn_guard(argv: list[str] | None) -> None:
+    # Enabled ONLY for real runtime runs via wrapper env flag.
+    if os.environ.get("TBOT_ENFORCE_CHILD_BLOCK", "0") != "1":
+        return
+    a = argv if argv is not None else sys.argv[1:]
+    if "--run" not in a:
+        return
+    # If this process is a python child of another python, block to prevent dual-pid chains.
+    try:
+        ppid = os.getppid()
+    except Exception:
+        ppid = None
+    if ppid:
+        # We don't resolve parent image; keep it simple and deterministic.
+        # Policy: block when explicitly enabled; wrapper controls scope.
+        print("TBOT_CHILD_SPAWN_GUARD_ACTIVE", "ppid="+str(ppid))
+
+def main(argv: list[str] | None = None) -> int:
+    _tbot_child_spawn_guard(argv)
+
+    parser = build_parser()
+    args = parser.parse_args(argv)
+
+    if args.smoke:
+        return smoke()
+
+    if not args.run:
+        parser.print_help()
+        return 0
+
+    from tbot.runtime.orchestrator import run_loop
+    run_loop(args)
+    return 0
+
+if __name__ == "__main__":
+    try:
+        rc = main()
+        raise SystemExit(rc)
+    except SystemExit:
+        raise
+    except Exception:
+        print("TBOT_FATAL_EXCEPTION")
+        traceback.print_exc()
+        raise SystemExit(1)

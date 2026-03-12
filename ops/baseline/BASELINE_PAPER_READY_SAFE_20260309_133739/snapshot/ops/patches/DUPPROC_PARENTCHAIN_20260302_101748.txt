@@ -1,0 +1,16 @@
+TRACE_FILE=C:\alpaca-bot\ORG_BOT_UNIFIED\ops\patches\DUPPROC_PARENTCHAIN_20260302_101748.txt
+START 2026-03-02T10:17:48.1392064-08:00
+CMD: C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+ACTIVE_COUNT=2
+
+ProcessId       : 27512
+ParentProcessId : 19540
+Name            : python.exe
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+ProcessId       : 23736
+ParentProcessId : 27512
+Name            : python.exe
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+

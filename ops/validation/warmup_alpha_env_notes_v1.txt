@@ -1,0 +1,14 @@
+WARMUP ALPHA ENV NOTES V1
+
+RATIONALE
+Policy alpha thresholds are already env-driven.
+Forensic showed alpha_off_chop(ts=0.030), so CHOP threshold must be lowered for Warmup.
+
+APPROVED WARMUP-ONLY SETTINGS
+TBOT_ALPHA_TREND_ON_TH=0.30
+TBOT_ALPHA_TREND_CAP_TH=0.15
+TBOT_ALPHA_CHOP_CAP_TH=0.03
+
+SCOPE
+Paper Warmup only
+Do not use for production baseline

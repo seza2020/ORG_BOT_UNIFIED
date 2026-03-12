@@ -1,0 +1,17 @@
+{
+  "profile_version": 1,
+  "mode": "PAPER_CHOP_WARMUP",
+  "active_model": "C_SELECTIVE_CHOP_WARMUP",
+  "target_regime": "CHOP",
+  "confidence_threshold": 0.3,
+  "min_rr": 1.5,
+  "max_plans_per_day": 6,
+  "cooldown_seconds": 240,
+  "risk_per_trade_r": 0.25,
+  "daily_kill_r": -1.0,
+  "alpha_policy": "ALLOW_CAP50_ONLY_IN_CHOP",
+  "warmup_end_trade_target": 20,
+  "warmup_end_day_target": 10,
+  "status": "APPROVED_FOR_PAPER_CHOP_WARMUP",
+  "notes": "Controlled CHOP warmup for data acquisition only; not a production profile."
+}

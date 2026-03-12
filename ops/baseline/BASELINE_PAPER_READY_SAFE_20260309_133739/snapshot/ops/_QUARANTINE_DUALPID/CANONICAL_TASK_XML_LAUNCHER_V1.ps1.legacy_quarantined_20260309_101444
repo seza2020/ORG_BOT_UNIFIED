@@ -1,0 +1,46 @@
+$ErrorActionPreference = "Stop"
+Set-StrictMode -Version Latest
+
+$U        = "C:\alpaca-bot\ORG_BOT_UNIFIED"
+$OPS      = Join-Path $U "ops"
+$WRAPDIR  = Join-Path $OPS "task_wrappers"
+$LOGS     = Join-Path $U "runtime\paper\logs"
+$PAPERWRP = Join-Path $WRAPDIR "ORG_UNIFIED_PAPER_RUN.ps1"
+
+if (!(Test-Path -LiteralPath $LOGS))     { New-Item -ItemType Directory -Force -Path $LOGS | Out-Null }
+if (!(Test-Path -LiteralPath $PAPERWRP)) { throw "PAPER_WRAPPER_NOT_FOUND=$PAPERWRP" }
+
+$launcherLog = Join-Path $LOGS "canonical_task_xml_launcher_v1.jsonl"
+
+function Write-LauncherLog {
+  param([string]$Kind,[hashtable]$Payload)
+  try {
+    $obj = [ordered]@{
+      ts      = (Get-Date).ToString("o")
+      kind    = $Kind
+      payload = $Payload
+    }
+    ($obj | ConvertTo-Json -Depth 8 -Compress) | Add-Content -LiteralPath $launcherLog -Encoding UTF8
+  } catch {}
+}
+
+Write-LauncherLog -Kind "launcher_start" -Payload @{
+  whoami      = "$env:USERNAME"
+  computer    = "$env:COMPUTERNAME"
+  userprofile = "$env:USERPROFILE"
+}
+
+Write-LauncherLog -Kind "handoff_to_paper_wrapper" -Payload @{
+  paper_wrapper = $PAPERWRP
+}
+
+try {
+  & $PAPERWRP
+  $ec = $LASTEXITCODE
+  Write-LauncherLog -Kind "paper_wrapper_exit" -Payload @{ exit_code = $ec }
+  exit $ec
+}
+catch {
+  Write-LauncherLog -Kind "launcher_exception" -Payload @{ error = $_.Exception.Message }
+  exit 201
+}

@@ -1,0 +1,383 @@
+from __future__ import annotations
+
+import os
+
+# === TBOT_GLOBAL_MUTEX_V2 (auto-injected; do not remove) ===
+import os, sys
+
+def _tbot_detect_profile(argv):
+    # Priority 1: explicit env
+    p = (os.environ.get("TBOT_PROFILE") or os.environ.get("TBOT_MODE") or "").strip().upper()
+    if p in ("PAPER","SHADOW","LIVE"):
+        return p
+
+    # Priority 2: argv hints
+    a = " ".join(argv).lower()
+    if "--shadow" in a or "shadow" in a:
+        return "SHADOW"
+    if "--paper" in a or "paper" in a:
+        return "PAPER"
+    if "--live" in a or "live" in a:
+        return "LIVE"
+
+    # Default
+    return "PAPER"
+
+def _tbot_install_mutex():
+    if os.name != "nt":
+        return
+
+    try:
+        import ctypes
+        from ctypes import wintypes
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        CreateMutexW = kernel32.CreateMutexW
+        CreateMutexW.argtypes = [wintypes.LPVOID, wintypes.BOOL, wintypes.LPCWSTR]
+        CreateMutexW.restype  = wintypes.HANDLE
+        GetLastError = kernel32.GetLastError
+
+        profile = _tbot_detect_profile(sys.argv)
+        # Profile-aware mutex: PAPER/SHADOW/LIVE separated
+        name = rf"Global\TBOT_ORG_BOT_UNIFIED_{profile}"
+
+        h = CreateMutexW(None, False, name)
+        if not h:
+            sys.stderr.write("TBOT_MUTEX_FAIL\n")
+            sys.exit(51)
+
+        # ERROR_ALREADY_EXISTS = 183
+        if GetLastError() == 183:
+            sys.stderr.write("TBOT_MUTEX_ALREADY_EXISTS\n")
+            sys.exit(33)
+
+    except Exception:
+        # fail-safe: if mutex install fails, do not risk dual runtime
+        sys.stderr.write("TBOT_MUTEX_EXCEPTION\n")
+        sys.exit(52)
+
+_tbot_install_mutex()
+# === END_TBOT_GLOBAL_MUTEX_V2 ===
+import os
+import sys
+import time
+from pathlib import Path
+
+LOCK_PATH = Path(r"C:\alpaca-bot\ORG_BOT_UNIFIED\runtime\paper\state\locks\tbot_singleton.lock")
+
+def acquire_lock():
+    # === INSTITUTIONAL: bypass internal single-instance guard under Runtime Manager ===
+    import os as _os  # local alias
+    if _os.environ.get("TBOT_RUNTIME_MANAGER","0") == "1":
+        # Manager owns single-instance + lifecycle; do NOT exit/return early.
+        return
+    # === end bypass ===
+    try:
+        fd = os.open(str(LOCK_PATH), os.O_CREAT | os.O_EXCL | os.O_RDWR)
+        return fd
+    except FileExistsError:
+        print("TBOT_SINGLE_INSTANCE_GUARD_TRIGGERED_BYPASSED_IF_MANAGER")
+        sys.exit(0)
+
+_lock_fd = acquire_lock()
+
+# === DUALPID_PY_MUTEX_GUARD_V1 (Institutional) ===
+def _dualpid_mutex_guard_win():
+    import os, sys
+    if os.environ.get("TBOT_ALLOW_DUALPID","0") == "1":
+        return
+    name = "Global\\ORG_BOT_UNIFIED_PAPER_SINGLEINSTANCE_V4"
+    try:
+        import ctypes
+        kernel32 = ctypes.windll.kernel32
+        CreateMutexW = kernel32.CreateMutexW
+        CreateMutexW.argtypes = [ctypes.c_void_p, ctypes.c_bool, ctypes.c_wchar_p]
+        CreateMutexW.restype = ctypes.c_void_p
+        handle = CreateMutexW(None, False, name)
+        if not handle:
+            return
+        ERROR_ALREADY_EXISTS = 183
+        if kernel32.GetLastError() == ERROR_ALREADY_EXISTS:
+            print("DUALPID_GUARD: BLOCK (python mutex exists) => exit", flush=True)
+            sys.exit(0)
+    except Exception:
+        return
+# === /DUALPID_PY_MUTEX_GUARD_V1 ===
+
+_dualpid_mutex_guard_win()
+
+import os
+import sys
+import multiprocessing
+
+# --- HARD SINGLE INSTANCE GUARD ---
+if os.environ.get("TBOT_MAIN_ACTIVE") == "1":
+    sys.exit(0)
+
+os.environ["TBOT_MAIN_ACTIVE"] = "1"
+multiprocessing.freeze_support()
+# ----------------------------------
+
+# === SPAWN_TRACE_V2 ===
+import os, sys, time, traceback
+
+_SPAWN_TRACE = r"C:\alpaca-bot\ORG_BOT_UNIFIED\runtime\paper\logs\spawn_trace.log"
+
+def _st(msg: str):
+    try:
+        os.makedirs(os.path.dirname(_SPAWN_TRACE), exist_ok=True)
+        with open(_SPAWN_TRACE, "a", encoding="utf-8") as f:
+            f.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} pid={os.getpid()} ppid={os.getppid()} {msg}\n")
+    except Exception:
+        pass
+
+_st("BOOT argv=" + repr(sys.argv))
+
+# Patch subprocess.Popen to log stack
+try:
+    import subprocess as _sp
+    _orig_popen = _sp.Popen
+    def _popen_wrap(*a, **k):
+        _st("SUBPROCESS_POPEN args=" + repr(a[:3]) + " kwargs_keys=" + repr(sorted(list(k.keys()))))
+        _st("STACK\n" + "".join(traceback.format_stack(limit=60)))
+        return _orig_popen(*a, **k)
+    _sp.Popen = _popen_wrap
+except Exception as _e:
+    _st("SUBPROCESS_PATCH_FAIL " + repr(_e))
+
+# Patch multiprocessing Process.start to log stack
+try:
+    import multiprocessing as _mp
+    _orig_start = _mp.process.BaseProcess.start
+    def _start_wrap(self, *a, **k):
+        _st("MP_START name=" + repr(getattr(self,'name',None)) + " target=" + repr(getattr(self,'_target',None)))
+        _st("STACK\n" + "".join(traceback.format_stack(limit=60)))
+        return _orig_start(self, *a, **k)
+    _mp.process.BaseProcess.start = _start_wrap
+except Exception as _e:
+    _st("MP_PATCH_FAIL " + repr(_e))
+# === END_SPAWN_TRACE_V2 ===
+
+
+# === TBOT_SINGLE_INSTANCE_GUARD_PERM_V1 ===
+# Permanent enterprise guard: prevents dual runtime (parent+child) for `python -m tbot.main --run` on Windows.
+# Mechanism: Global mutex (handle kept alive) + atomic lockfile + evidence log.
+
+import os, sys, time
+
+_ROOT = r"C:\alpaca-bot\ORG_BOT_UNIFIED"
+_LOG  = os.path.join(_ROOT, r"runtime\paper\logs\dualpid_guard_perm.log")
+_LDIR = os.path.join(_ROOT, r"runtime\paper\state\locks")
+_LFILE= os.path.join(_LDIR, "ORG_BOT_UNIFIED_TBOT_MAIN_RUN.lock")
+_MUTEX= r"Global\ORG_BOT_UNIFIED_TBOT_MAIN_RUN"
+
+# Keep mutex handle alive for lifetime of process (critical on Windows).
+_MUTEX_HANDLE = None
+
+def _log(msg: str) -> None:
+    try:
+        os.makedirs(os.path.dirname(_LOG), exist_ok=True)
+        with open(_LOG, "a", encoding="utf-8") as f:
+            f.write(f"{time.strftime('%Y-%m-%dT%H:%M:%S')} pid={os.getpid()} ppid={os.getppid()} {msg} argv={sys.argv!r}\n")
+    except Exception:
+        pass
+
+def _is_run_mode() -> bool:
+    return ("--run" in sys.argv)
+
+def _acquire_mutex_or_exit() -> None:
+    global _MUTEX_HANDLE
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        CreateMutexW = ctypes.windll.kernel32.CreateMutexW
+        CreateMutexW.argtypes = [wintypes.LPVOID, wintypes.BOOL, wintypes.LPCWSTR]
+        CreateMutexW.restype  = wintypes.HANDLE
+
+        GetLastError = ctypes.windll.kernel32.GetLastError
+
+        h = CreateMutexW(None, True, _MUTEX)
+        err = GetLastError()
+
+        # ERROR_ALREADY_EXISTS = 183
+        if h and err == 183:
+            _log("BLOCK_MUTEX_ALREADY_EXISTS -> exit(0)")
+            raise SystemExit(0)
+
+        _MUTEX_HANDLE = h
+        _log("ALLOW_MUTEX_ACQUIRED")
+    except SystemExit:
+        raise
+    except Exception as e:
+        # Fail-closed would be safer, but to avoid accidental downtime we fail-open and rely on lockfile.
+        _log("WARN_MUTEX_FAIL_OPEN " + repr(e))
+
+def _atomic_lockfile_or_exit() -> None:
+    try:
+        os.makedirs(_LDIR, exist_ok=True)
+
+        # Atomic create: if exists => another instance already running.
+        fd = os.open(_LFILE, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        try:
+            os.write(fd, f"ts={time.strftime('%Y-%m-%dT%H:%M:%S')}\n".encode("utf-8"))
+            os.write(fd, f"pid={os.getpid()}\n".encode("utf-8"))
+            os.write(fd, f"ppid={os.getppid()}\n".encode("utf-8"))
+        finally:
+            os.close(fd)
+
+        _log("ALLOW_LOCKFILE_CREATED")
+    except FileExistsError:
+        _log("BLOCK_LOCKFILE_EXISTS -> exit(0)")
+        raise SystemExit(0)
+    except SystemExit:
+        raise
+    except Exception as e:
+        # If lockfile fails unexpectedly, rely on mutex (most robust on Windows).
+        _log("WARN_LOCKFILE_FAIL_OPEN " + repr(e))
+
+def _install_guard() -> None:
+    if not _is_run_mode():
+        return
+    _acquire_mutex_or_exit()
+    _atomic_lockfile_or_exit()
+    _log("READY_GUARD_ACTIVE")
+
+_install_guard()
+# === END TBOT_SINGLE_INSTANCE_GUARD_PERM_V1 ===
+
+# ==== TBOT_PROC_GUARD_V3 BEGIN ====
+# Global single-instance guard (Windows Named Mutex).
+# ExitCode 86 indicates 'already running'.
+def _tbot_global_single_instance_guard() -> None:
+    import os
+    try:
+        import ctypes
+        CreateMutexW = ctypes.windll.kernel32.CreateMutexW
+        GetLastError = ctypes.windll.kernel32.GetLastError
+        name = r"Global\TBOT_MAIN_RUNTIME_GUARD_V3"
+        h = CreateMutexW(None, False, name)
+        if GetLastError() == 183:
+            print("TBOT_SINGLE_INSTANCE_BLOCKED_MUTEX", name, "pid=", os.getpid())
+            raise SystemExit(86)
+        globals()["_TBOT_MUTEX_HANDLE_V3"] = h
+    except SystemExit:
+        raise
+    except Exception as e:
+        print("TBOT_MUTEX_ERROR_V3", repr(e))
+        raise SystemExit(86)
+
+_tbot_global_single_instance_guard()
+# ==== TBOT_PROC_GUARD_V3 END ====
+
+
+import argparse
+import os
+import sys
+import traceback
+
+# ==== TBOT_GLOBAL_SINGLE_INSTANCE BEGIN ====
+import ctypes
+
+# NOTE: Paper profile global lock (single-instance)
+_LOCK_PATH = r"C:\alpaca-bot\ORG_BOT_UNIFIED\runtime\paper\state\BOT_GLOBAL.lock"
+
+def _tbot_global_single_instance_guard() -> None:
+    try:
+        os.makedirs(os.path.dirname(_LOCK_PATH), exist_ok=True)
+
+        k32 = ctypes.windll.kernel32
+        CreateFileW = k32.CreateFileW
+        CreateFileW.argtypes = [
+            ctypes.c_wchar_p, ctypes.c_uint32, ctypes.c_uint32,
+            ctypes.c_void_p, ctypes.c_uint32, ctypes.c_uint32, ctypes.c_void_p
+        ]
+        CreateFileW.restype = ctypes.c_void_p
+
+        GENERIC_READ  = 0x80000000
+        GENERIC_WRITE = 0x40000000
+        OPEN_ALWAYS   = 4
+        FILE_ATTRIBUTE_NORMAL = 0x80
+
+        # share=0 => exclusive
+        h = CreateFileW(_LOCK_PATH, GENERIC_READ | GENERIC_WRITE, 0, None, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, None)
+        # INVALID_HANDLE_VALUE == -1
+        if h == ctypes.c_void_p(-1).value or h == 0:
+            print("TBOT_SINGLE_INSTANCE_BLOCKED_LOCK_OPEN_FAIL", _LOCK_PATH)
+            raise SystemExit(86)
+
+        # keep handle alive
+        globals()["_TBOT_GLOBAL_LOCK_HANDLE"] = h
+
+        # write pid best-effort
+        try:
+            with open(_LOCK_PATH, "w", encoding="utf-8") as f:
+                f.write(str(os.getpid()))
+        except Exception:
+            pass
+
+    except SystemExit:
+        raise
+    except Exception as e:
+        print("TBOT_SINGLE_INSTANCE_BLOCKED_LOCK", repr(e))
+        raise SystemExit(86)
+
+_tbot_global_single_instance_guard()
+# ==== TBOT_GLOBAL_SINGLE_INSTANCE END ====
+
+BANNER = "TBOT Trading Runtime (Enterprise CLI)"
+
+def build_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(prog="tbot.main", description=BANNER)
+    p.add_argument("--smoke", action="store_true", help="print identity/session info and exit 0")
+    p.add_argument("--run", action="store_true", help="run orchestrator loop")
+    p.add_argument("--iters", type=int, default=999999, help="max iterations")
+    p.add_argument("--sleep", type=float, default=0.5, help="sleep seconds")
+    return p
+
+def smoke() -> int:
+    print("TBOT_SMOKE_OK")
+    print("CWD=", os.getcwd())
+    print("PYTHONPATH=", os.environ.get("PYTHONPATH"))
+    print("TBOT_RUNROOT=", os.environ.get("TBOT_RUNROOT"))
+    print("SYS_EXEC=", sys.executable)
+    return 0
+
+def main(argv: list[str] | None = None) -> int:
+    parser = build_parser()
+    args = parser.parse_args(argv)
+
+    if args.smoke:
+        return smoke()
+
+    if not args.run:
+        parser.print_help()
+        return 0
+
+    from tbot.runtime.orchestrator import run_loop
+    run_loop(args)
+    return 0
+
+if __name__ == "__main__":
+    try:
+        rc = main()
+        raise SystemExit(rc)
+    except SystemExit:
+        raise
+    except Exception:
+        print("TBOT_FATAL_EXCEPTION")
+        traceback.print_exc()
+        raise SystemExit(1)
+
+
+
+
+
+
+
+
+
+
+
+
+
+

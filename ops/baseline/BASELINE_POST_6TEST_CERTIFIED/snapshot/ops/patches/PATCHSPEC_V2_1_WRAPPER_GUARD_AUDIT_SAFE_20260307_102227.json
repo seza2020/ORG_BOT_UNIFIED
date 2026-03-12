@@ -1,0 +1,12 @@
+{
+  "version": "PATCHSPEC_V2_1",
+  "name": "WRAPPER_GUARD_AUDIT_APPEND_SAFE",
+  "target": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\ops\\task_wrappers\\ORG_UNIFIED_RUNTIME_MANAGER.ps1",
+  "rationale": "Append non-blocking wrapper guard audit without embedding any legacy-root literal",
+  "operations": [
+    {
+      "type": "append",
+      "text": "\r\n# PATCH_V2_1_GUARD_AUDIT_BEGIN\ntry {\n  $__tbot_v21_root = 'C:\\alpaca-bot\\ORG_BOT_UNIFIED'\n  $__tbot_v21_py   = 'C:\\alpaca-bot\\ORG_BOT_UNIFIED\\code\\.venv\\Scripts\\python.exe'\n  $__tbot_v21_log  = 'C:\\alpaca-bot\\ORG_BOT_UNIFIED\\runtime\\paper\\logs\\hardening_events.jsonl'\n\n  $__tbot_v21_cmd  = \"\"\n  try {\n    $__tbot_v21_cmd = (\n      Get-CimInstance Win32_Process -Filter (\"ProcessId=\" + $PID) -ErrorAction Stop\n    ).CommandLine\n  } catch {\n    $__tbot_v21_cmd = \"\"\n  }\n\n  $__tbot_v21_row = [ordered]@{\n    ts                      = (Get-Date).ToString(\"s\")\n    kind                    = \"wrapper_guard_audit_v2_1\"\n    wrapper                 = \"ORG_UNIFIED_RUNTIME_MANAGER.ps1\"\n    canonical_root          = $__tbot_v21_root\n    canonical_root_exists   = (Test-Path $__tbot_v21_root)\n    canonical_python        = $__tbot_v21_py\n    canonical_python_exists = (Test-Path $__tbot_v21_py)\n    current_script          = $PSCommandPath\n    current_location        = (Get-Location).Path\n    env_pythonpath          = $env:PYTHONPATH\n    env_tbot_runroot        = $env:TBOT_RUNROOT\n    process_commandline     = $__tbot_v21_cmd\n    script_under_unified    = [bool](($PSCommandPath -as [string]) -like \"*ORG_BOT_UNIFIED*\")\n    pwd_under_unified       = [bool](((Get-Location).Path -as [string]) -like \"*ORG_BOT_UNIFIED*\")\n    pythonpath_has_unified  = [bool](($env:PYTHONPATH -as [string]) -like \"*ORG_BOT_UNIFIED*\")\n    runroot_has_unified     = [bool](($env:TBOT_RUNROOT -as [string]) -like \"*ORG_BOT_UNIFIED*\")\n  }\n\n  $__tbot_v21_dir = Split-Path -Parent $__tbot_v21_log\n  if ($__tbot_v21_dir) {\n    New-Item -ItemType Directory -Force -Path $__tbot_v21_dir | Out-Null\n  }\n\n  ($__tbot_v21_row | ConvertTo-Json -Compress -Depth 10) |\n    Add-Content -LiteralPath $__tbot_v21_log -Encoding UTF8\n} catch {\n  # best-effort only\n}\n# PATCH_V2_1_GUARD_AUDIT_END\r\n"
+    }
+  ]
+}

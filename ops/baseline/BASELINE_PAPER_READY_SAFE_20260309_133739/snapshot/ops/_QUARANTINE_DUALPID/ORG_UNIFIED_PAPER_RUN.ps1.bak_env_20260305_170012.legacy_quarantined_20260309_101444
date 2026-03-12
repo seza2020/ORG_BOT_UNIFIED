@@ -1,0 +1,9 @@
+param()
+
+$ErrorActionPreference = "Stop"
+
+$mgr = "C:\alpaca-bot\ORG_BOT_UNIFIED\ops\task_wrappers\ORG_UNIFIED_RUNTIME_MANAGER.ps1"
+if(!(Test-Path $mgr)){ throw "RUNTIME_MANAGER_NOT_FOUND=$mgr" }
+
+& $mgr -Profile PAPER -UnifiedRoot "C:\alpaca-bot\ORG_BOT_UNIFIED" -PyExe "C:\alpaca-bot\ORG_BOT_UNIFIED\code\.venv\Scripts\python.exe"
+exit $LASTEXITCODE

@@ -1,0 +1,54 @@
+param()
+
+$ErrorActionPreference="Stop"
+$ROOT="C:\alpaca-bot\ORG_BOT_UNIFIED"
+$CODE=Join-Path $ROOT "code"
+$RUNROOT=Join-Path $ROOT "runtime\paper"
+$LOGDIR=Join-Path $RUNROOT "logs"
+$PY=Join-Path $CODE ".venv\Scripts\python.exe"
+
+New-Item -ItemType Directory -Force $LOGDIR | Out-Null
+New-Item -ItemType Directory -Force (Join-Path $RUNROOT "state\locks") | Out-Null
+
+# Hard bind env (deterministic)
+$env:TBOT_ROOT  = $ROOT
+$env:TBOT_CODE  = $CODE
+$env:TBOT_RUNROOT = $RUNROOT
+$env:TBOT_LOG_ROOT = $LOGDIR
+
+Write-Host "ROOT=$ROOT"
+Write-Host "CODE=$CODE"
+Write-Host "RUNROOT=$RUNROOT"
+Write-Host "LOGDIR=$LOGDIR"
+Write-Host "PY=$PY"
+
+if(!(Test-Path $PY)){ throw "MISSING_PYTHON=$PY" }
+
+# Clear stale lock ONLY if pid is dead (best-effort); do not delete if unknown
+$lock = Join-Path (Join-Path $RUNROOT "state\locks") "TBOT_SINGLE_INSTANCE_PAPER.lock"
+if(Test-Path $lock){
+  Write-Host "LOCK_EXISTS_BEFORE=$lock"
+  try{
+    $j = Get-Content $lock -Raw | ConvertFrom-Json
+    $opid = [int]$j.pid
+    $alive = $false
+    try{ $alive = (Get-Process -Id $opid -ErrorAction SilentlyContinue) -ne $null } catch {}
+    if(-not $alive){
+      Remove-Item -LiteralPath $lock -Force -ErrorAction SilentlyContinue
+      Write-Host "LOCK_REMOVED_STALE_PID=$opid"
+    } else {
+      Write-Host "LOCK_HELD_BY_LIVE_PID=$opid (will likely exit 86)"
+    }
+  } catch {
+    Write-Host "LOCK_PARSE_FAIL (leave it)"; 
+  }
+}
+
+Set-Location $CODE
+
+# Run in-foreground to capture REAL error/exit
+# -u for unbuffered, so we see output immediately
+& $PY -u -m tbot.main --run --iters 999999 --sleep 0.5
+$ec=$LASTEXITCODE
+Write-Host ("TBOT_EXITCODE=" + $ec)
+exit $ec

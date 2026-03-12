@@ -1,0 +1,13 @@
+{
+  "ts": 1772587280.0412056,
+  "source_trades_path": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\runtime\\paper\\analytics\\trades.jsonl",
+  "n_rows_total": 0,
+  "n_rows_with_pl": 0,
+  "by_sid": [],
+  "by_sid_symbol": [],
+  "notes": {
+    "sid_extraction": "heuristic: sid/strategy_id/strategy/... or nested meta/ctx/plan/signal",
+    "requires": "trades.jsonl with realized_pl (or net_amount) and ideally sid tagging",
+    "score": "composite of expectancy + PF + winrate with n/30 sample-size multiplier"
+  }
+}

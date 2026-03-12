@@ -1,0 +1,108 @@
+from __future__ import annotations
+
+
+# === FATAL_TRACE_ALWAYS_V2 BEGIN ===
+def _tbot_install_fatal_trace_v2():
+    import sys, os, traceback
+
+    if not hasattr(sys, "_tbot_stage"):
+        sys._tbot_stage = "BOOT"
+
+    # Always show unhandled exceptions
+    def _excepthook(exc_type, exc, tb):
+        try:
+            sys.stderr.write("\n[TBT_FATAL] UNCAUGHT_EXCEPTION\n")
+            sys.stderr.write(f"[TBT_FATAL] pid={os.getpid()} stage={getattr(sys,'_tbot_stage','?')}\n")
+            traceback.print_exception(exc_type, exc, tb, file=sys.stderr)
+            sys.stderr.write("[TBT_FATAL] END_UNCAUGHT_EXCEPTION\n")
+        except Exception:
+            pass
+    sys.excepthook = _excepthook
+
+    # Trap sys.exit and builtins.exit/quit and print stack always
+    _orig_sys_exit = sys.exit
+
+    def _exit_trap(code=0):
+        try:
+            sys.stderr.write(f"\n[TBT_EXIT_TRAP] pid={os.getpid()} stage={getattr(sys,'_tbot_stage','?')} code={code}\n")
+            stack = traceback.format_stack(limit=80)
+            for line in stack:
+                sys.stderr.write(line)
+            sys.stderr.write("[TBT_EXIT_TRAP] END_STACK\n")
+        except Exception:
+            pass
+        raise SystemExit(code)
+
+    sys.exit = _exit_trap
+
+    try:
+        import builtins as _b
+        _b.exit = _exit_trap
+        _b.quit = _exit_trap
+    except Exception:
+        pass
+
+    import atexit
+    def _atexit():
+        try:
+            sys.stderr.write(f"\n[TBT_EXIT] pid={os.getpid()} stage={getattr(sys,'_tbot_stage','?')}\n")
+        except Exception:
+            pass
+    atexit.register(_atexit)
+
+_tbot_install_fatal_trace_v2()
+# === FATAL_TRACE_ALWAYS_V2 END ===
+def _tbot_block_non_main_process():
+    import os, sys
+    try:
+        import multiprocessing as _mp
+        if _mp.current_process().name != "MainProcess":
+            sys.stderr.write(f"[SPAWN_BLOCK] non-main process name={_mp.current_process().name} pid={os.getpid()} -> exit 86\n")
+            raise SystemExit(86)
+    except Exception:
+        # if multiprocessing is unavailable, do not block
+        return
+
+_tbot_block_non_main_process()
+
+from tbot.runtime.single_instance import enforce_single_instance as _tbot_enforce_single_instance
+_tbot_enforce_single_instance()
+import argparse
+import os
+import sys
+from typing import Optional
+
+import os, sys, time
+def _tbot_single_instance_lock():
+    runroot = os.environ.get("TBOT_RUNROOT") or os.environ.get("RUNROOT") or os.path.join(os.getcwd(), "runtime", "paper")
+    lock_dir = os.path.join(runroot, "state", "locks")
+    os.makedirs(lock_dir, exist_ok=True)
+    lock_path = os.path.join(lock_dir, "TBOT_SINGLE_INSTANCE.lock")
+
+    try:
+        # Windows-friendly lock using msvcrt (non-blocking)
+        import msvcrt
+        f = open(lock_path, "a+", encoding="utf-8")
+        f.seek(0)
+        try:
+            msvcrt.locking(f.fileno(), msvcrt.LK_NBLCK, 1)
+        except OSError:
+            # Another instance holds the lock
+            print("[TBOT_SINGLE_INSTANCE] LOCK_HELD -> exiting 83", flush=True)
+            raise SystemExit(83)
+        f.truncate(0)
+        f.write(str(os.getpid()))
+        f.flush()
+        return f
+    except SystemExit:
+        raise
+    except Exception as e:
+        import sys, os, traceback
+        try:
+            print(f"[ENTRYPOINT_EXCEPTION] pid={os.getpid()} stage={getattr(sys,'_tbot_stage','?')} repr={repr(e)}", file=sys.stderr)
+            traceback.print_exc()
+            print("[ENTRYPOINT_EXCEPTION] END", file=sys.stderr)
+        except Exception:
+            pass
+        return 1
+

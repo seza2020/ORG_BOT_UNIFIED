@@ -1,0 +1,16 @@
+{
+  "baseline_version": 1,
+  "profile": "paper",
+  "active_model": "C_SELECTIVE",
+  "confidence_threshold": 0.35,
+  "rr_threshold": 2.0,
+  "calibration_wave": "8B_confidence_only",
+  "status": "PRIMARY_BASELINE_FOR_PAPER",
+  "backup_candidate": 0.4,
+  "exploratory_candidate": 0.45,
+  "rejected_candidates": [
+    0.3,
+    0.6
+  ],
+  "notes": "Primary baseline frozen from Step 8B based on best balance of sample size, selectivity, and confidence quality."
+}

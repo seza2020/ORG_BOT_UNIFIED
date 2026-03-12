@@ -1,0 +1,12 @@
+{
+  "version": "PATCHSPEC_V2",
+  "name": "WRAPPER_GUARD_AUDIT_APPEND",
+  "target": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\ops\\task_wrappers\\ORG_UNIFIED_RUNTIME_MANAGER.ps1",
+  "rationale": "Append non-blocking wrapper guard audit for canonical root/python/env observability",
+  "operations": [
+    {
+      "type": "append",
+      "text": "\r\n# PATCH_V2_GUARD_AUDIT_BEGIN\ntry {\n  $__tbot_v2_root   = 'C:\\alpaca-bot\\ORG_BOT_UNIFIED'\n  $__tbot_v2_legacy = 'C:\\alpaca-bot\\org_bot'\n  $__tbot_v2_py     = 'C:\\alpaca-bot\\ORG_BOT_UNIFIED\\code\\.venv\\Scripts\\python.exe'\n  $__tbot_v2_log    = 'C:\\alpaca-bot\\ORG_BOT_UNIFIED\\runtime\\paper\\logs\\hardening_events.jsonl'\n\n  $__tbot_v2_row = [ordered]@{\n    ts                     = (Get-Date).ToString(\"s\")\n    kind                   = \"wrapper_guard_audit_v2\"\n    wrapper                = \"ORG_UNIFIED_RUNTIME_MANAGER.ps1\"\n    canonical_root         = $__tbot_v2_root\n    canonical_root_exists  = (Test-Path $__tbot_v2_root)\n    canonical_python       = $__tbot_v2_py\n    canonical_python_exists= (Test-Path $__tbot_v2_py)\n    legacy_root            = $__tbot_v2_legacy\n    current_script         = $PSCommandPath\n    current_location       = (Get-Location).Path\n    path_looks_legacy      = [bool](($PSCommandPath -as [string]) -like \"*C:\\alpaca-bot\\org_bot*\")\n    env_pythonpath         = $env:PYTHONPATH\n    env_tbot_runroot       = $env:TBOT_RUNROOT\n  }\n\n  $__tbot_v2_dir = Split-Path -Parent $__tbot_v2_log\n  if ($__tbot_v2_dir) {\n    New-Item -ItemType Directory -Force -Path $__tbot_v2_dir | Out-Null\n  }\n\n  ($__tbot_v2_row | ConvertTo-Json -Compress -Depth 10) |\n    Add-Content -LiteralPath $__tbot_v2_log -Encoding UTF8\n} catch {\n  # best-effort only\n}\n# PATCH_V2_GUARD_AUDIT_END\r\n"
+    }
+  ]
+}

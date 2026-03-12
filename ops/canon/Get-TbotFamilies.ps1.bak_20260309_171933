@@ -1,0 +1,66 @@
+param()
+
+$procs = @(
+  Get-CimInstance Win32_Process -Filter "Name='python.exe'" |
+  Where-Object { ($_.CommandLine -match "tbot\.main") -or ($_.ExecutablePath -match "ORG_BOT_UNIFIED\\code\\\.venv\\Scripts\\python\.exe") }
+)
+
+$byPid = @{}
+foreach ($p in $procs) { $byPid[[int]$p.ProcessId] = $p }
+
+function Get-RootPid([int]$pid, $map) {
+  $seen = @{}
+  $cur = $pid
+  while ($true) {
+    if ($seen.ContainsKey($cur)) { return $cur }
+    $seen[$cur] = $true
+
+    if (-not $map.ContainsKey($cur)) { return $cur }
+
+    $p = $map[$cur]
+    $ppid = [int]$p.ParentProcessId
+
+    if ($ppid -le 0) { return $cur }
+    if (-not $map.ContainsKey($ppid)) { return $cur }
+
+    $parent = $map[$ppid]
+
+    $parentIsPython = ($parent.Name -eq "python.exe")
+    $sameTree = (
+      ($parent.CommandLine -match "tbot\.main") -or
+      ($parent.ExecutablePath -match "ORG_BOT_UNIFIED\\code\\\.venv\\Scripts\\python\.exe") -or
+      ($parent.ExecutablePath -match "C:\\Python313\\python\.exe")
+    )
+
+    if ($parentIsPython -and $sameTree) {
+      $cur = $ppid
+      continue
+    }
+
+    return $cur
+  }
+}
+
+$rows = foreach ($p in $procs) {
+  [PSCustomObject]@{
+    RootPid        = Get-RootPid -pid ([int]$p.ProcessId) -map $byPid
+    ProcessId      = [int]$p.ProcessId
+    ParentProcessId= [int]$p.ParentProcessId
+    Name           = $p.Name
+    ExecutablePath = $p.ExecutablePath
+    CommandLine    = $p.CommandLine
+  }
+}
+
+$families = $rows | Group-Object RootPid | ForEach-Object {
+  $items = $_.Group | Sort-Object ProcessId
+  [PSCustomObject]@{
+    RootPid         = [int]$_.Name
+    MemberCount     = $items.Count
+    MemberPids      = (($items.ProcessId) -join ",")
+    ExecutablePaths = (($items.ExecutablePath | Select-Object -Unique) -join " | ")
+    CommandLines    = (($items.CommandLine | Select-Object -Unique) -join " || ")
+  }
+}
+
+$families | Sort-Object RootPid

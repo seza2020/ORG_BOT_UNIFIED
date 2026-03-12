@@ -1,0 +1,2 @@
+LOCKED_VERSION = S01_v03_conf_scaled
+Do not modify S01 confidence logic beyond this point.

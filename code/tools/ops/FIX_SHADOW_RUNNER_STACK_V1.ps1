@@ -1,0 +1,174 @@
+param(
+  [string]$ProjectRoot="C:\alpaca-bot\ORG_BOT_UNIFIED\code",
+  [string]$RunRootShadow="C:\alpaca-bot\ORG_BOT_UNIFIED\runtime\shadow",
+  [string]$TaskName="TBOT_RUN_SHADOW_DAILY_0630"
+)
+$ErrorActionPreference="Stop"
+
+function ParseOk([string]$p){
+  try { [ScriptBlock]::Create((Get-Content -Raw -Encoding UTF8 $p)) | Out-Null; return $true }
+  catch { return $false }
+}
+function BackupFile([string]$p,[string]$tag){
+  if(Test-Path $p){
+    Copy-Item $p ($p + ".bak_" + $tag + "_" + (Get-Date -Format "yyyyMMdd_HHmmss")) -Force
+  }
+}
+
+$inner   = Join-Path $ProjectRoot "tools\RUN_LIVE_SHADOW_CANON_V2.ps1"
+$wrapper = Join-Path $ProjectRoot "tools\RUN_SHADOW_PROFILE_CANON_V2.ps1"
+$profile = Join-Path $ProjectRoot "tools\profiles\shadow.profile.json"
+
+if(!(Test-Path $inner)){ throw "MISSING_INNER=$inner" }
+if(!(Test-Path $wrapper)){ throw "MISSING_WRAPPER=$wrapper" }
+if(!(Test-Path $profile)){ throw "MISSING_SHADOW_PROFILE=$profile" }
+
+# -----------------------------
+# A) Restore inner to latest parseable (current or backups)
+# -----------------------------
+$cands = New-Object System.Collections.Generic.List[string]
+$cands.Add($inner) | Out-Null
+Get-ChildItem ($inner + ".bak_*") -ErrorAction SilentlyContinue |
+  Sort-Object LastWriteTime -Descending |
+  ForEach-Object { $cands.Add($_.FullName) | Out-Null }
+
+$good=$null
+foreach($p in $cands){
+  if(ParseOk $p){ $good=$p; break }
+}
+if(-not $good){ throw "NO_PARSEABLE_VERSION_FOUND for $inner" }
+
+if($good -ne $inner){
+  BackupFile $inner "before_restore"
+  Copy-Item $good $inner -Force
+  "RESTORED_INNER_FROM=$good" | Out-Host
+}else{
+  "INNER_ALREADY_PARSEABLE=1" | Out-Host
+}
+
+# -----------------------------
+# B) Rewrite param block safely + ensure $ROOT/$Root
+# (NO regex \s ; uses Trim/Contains)
+# -----------------------------
+$lines = Get-Content -Encoding UTF8 $inner
+
+$start=-1
+for($i=0;$i -lt [Math]::Min(250,$lines.Count);$i++){
+  $ln = [string]$lines[$i]
+  $t  = $ln.Trim()
+  if($t.Length -ge 4 -and $t.ToLower().StartsWith("param") -and $t.Contains("(")){
+    # accept: param(   OR  param (
+    if($t.ToLower().Replace(" ","") -eq "param("){ $start=$i; break }
+  }
+}
+if($start -lt 0){
+  # no param block => insert at top (keep nothing)
+  $start=0
+  $end=-1
+} else {
+  $end=-1
+  for($i=$start+1;$i -lt [Math]::Min($start+500,$lines.Count);$i++){
+    if(([string]$lines[$i]).Trim() -eq ")"){ $end=$i; break }
+  }
+  if($end -lt 0){
+    # if we didn't find ')', assume first ~80 lines are param-ish (best-effort)
+    $end=[Math]::Min($start+80,$lines.Count-1)
+  }
+}
+
+BackupFile $inner "param_rootfix"
+
+$new = New-Object System.Collections.Generic.List[string]
+
+# keep header before param( only if it really starts later
+for($i=0;$i -lt $start;$i++){ $new.Add($lines[$i]) | Out-Null }
+
+# canonical param (valid PowerShell)
+$new.Add('param(') | Out-Null
+$new.Add('  [string]$ProjectRoot="C:\alpaca-bot\ORG_BOT_UNIFIED\code",') | Out-Null
+$new.Add('  [string]$RunRoot="C:\alpaca-bot\ORG_BOT_UNIFIED\runtime\shadow",') | Out-Null
+$new.Add('  [string]$IsoDayOverride=""') | Out-Null
+$new.Add(')') | Out-Null
+$new.Add('$ErrorActionPreference="Stop"') | Out-Null
+$new.Add('# ROOT_ALIAS_FIX_V3 (prevent Join-Path null; keep legacy aliases)') | Out-Null
+$new.Add('if([string]::IsNullOrWhiteSpace($ProjectRoot)){ $ProjectRoot="C:\alpaca-bot\ORG_BOT_UNIFIED\code" }') | Out-Null
+$new.Add('if([string]::IsNullOrWhiteSpace($RunRoot)){ $RunRoot="C:\alpaca-bot\ORG_BOT_UNIFIED\runtime\shadow" }') | Out-Null
+$new.Add('$ROOT=$ProjectRoot') | Out-Null
+$new.Add('$Root=$ProjectRoot') | Out-Null
+$new.Add('') | Out-Null
+
+# append remainder after old param region, skipping duplicate markers
+for($i=($end+1);$i -lt $lines.Count;$i++){
+  $ln=[string]$lines[$i]
+  if($ln -match 'ROOT_ALIAS_FIX_V'){ continue }
+  if($ln.Trim().ToLower().StartsWith('$erroractionpreference')){ continue }
+  $new.Add($ln) | Out-Null
+}
+
+Set-Content -Encoding UTF8 -Path $inner -Value $new.ToArray()
+
+if(!(ParseOk $inner)){ throw "PARSE_FAIL_AFTER_PATCH inner=$inner" }
+"INNER_PARSE_OK=1" | Out-Host
+
+# -----------------------------
+# C) Smoke via wrapper (creates LIVE_OUT/LIVE_ERR)
+# -----------------------------
+$pwsh="C:\Program Files\PowerShell\7\pwsh.exe"
+if(!(Test-Path $pwsh)){ $pwsh=(Get-Command pwsh.exe -ErrorAction SilentlyContinue).Source }
+if([string]::IsNullOrWhiteSpace($pwsh)){ $pwsh=(Get-Command powershell.exe).Source }
+
+& $pwsh -NoProfile -ExecutionPolicy Bypass -File $wrapper `
+  -ProjectRoot $ProjectRoot -RunRoot $RunRootShadow -ProfilePath $profile -InnerScriptPath $inner | Out-Null
+"WRAPPER_SMOKE_OK=1" | Out-Host
+
+$ops = Join-Path $RunRootShadow "logs\ops"
+$lo = Get-ChildItem $ops -File -Filter "LIVE_OUT_*_LATEST.txt" -ErrorAction SilentlyContinue | Sort LastWriteTime -Desc | Select -First 1
+$le = Get-ChildItem $ops -File -Filter "LIVE_ERR_*_LATEST.txt" -ErrorAction SilentlyContinue | Sort LastWriteTime -Desc | Select -First 1
+
+"LIVE_OUT_LATEST=$($lo.FullName)" | Out-Host
+if($lo){ Get-Content $lo.FullName -Tail 40 | Out-Host } else { "NO_LIVE_OUT_LATEST=1" | Out-Host }
+
+"LIVE_ERR_LATEST=$($le.FullName)" | Out-Host
+if($le){ Get-Content $le.FullName -Tail 80 | Out-Host } else { "NO_LIVE_ERR_LATEST=1" | Out-Host }
+
+# -----------------------------
+# D) Patch scheduled task to be profile-driven (no $args variable!)
+# -----------------------------
+$t = Get-ScheduledTask -TaskName $TaskName -ErrorAction Stop
+$a = $t.Actions | Select-Object -First 1
+$exe = [string]$a.Execute
+$argLine = [string]$a.Arguments
+
+# Ensure wrapper v2 in args
+$argLine2 = $argLine -replace 'RUN_SHADOW_PROFILE_CANON_V1\.ps1','RUN_SHADOW_PROFILE_CANON_V2.ps1'
+$argLine2 = [regex]::Replace($argLine2,'(?i)-File\s+"[^"]+"',('-File "' + $wrapper + '"'),1)
+
+if($argLine2 -notmatch '(?i)-ProjectRoot\s+"'){
+  $argLine2 += (' -ProjectRoot "' + $ProjectRoot + '"')
+}
+if($argLine2 -notmatch '(?i)-RunRoot\s+"'){
+  $argLine2 += (' -RunRoot "' + $RunRootShadow + '"')
+}
+if($argLine2 -notmatch '(?i)-ProfilePath\s+"'){
+  $argLine2 += (' -ProfilePath "' + $profile + '"')
+}
+if($argLine2 -notmatch '(?i)-InnerScriptPath\s+"'){
+  $argLine2 += (' -InnerScriptPath "' + $inner + '"')
+}
+
+$argLine2 = ($argLine2 -replace "(\r?\n)+"," ").Trim()
+
+$action2 = New-ScheduledTaskAction -Execute $exe -Argument ([string]$argLine2)
+Set-ScheduledTask -TaskName $TaskName -Action $action2 | Out-Null
+
+"SHADOW_TASK_PATCHED=1 task=$TaskName" | Out-Host
+"NEW_ARGS=$argLine2" | Out-Host
+
+# Run task once (should not fail the task host; wrapper logs CORE_EXIT)
+Start-ScheduledTask -TaskName $TaskName
+Start-Sleep -Seconds 15
+$info = Get-ScheduledTaskInfo -TaskName $TaskName
+("TASK_LAST_RUN=" + $info.LastRunTime + " RESULT=" + $info.LastTaskResult + " NEXT=" + $info.NextRunTime) | Out-Host
+
+"OK=FIX_SHADOW_RUNNER_STACK_DONE" | Out-Host
+

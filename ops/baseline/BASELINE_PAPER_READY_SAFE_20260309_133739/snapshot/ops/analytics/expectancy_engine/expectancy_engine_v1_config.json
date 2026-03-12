@@ -1,0 +1,15 @@
+{
+  "engine_version": "EXPECTANCY_ENGINE_V1",
+  "root": "C:\\alpaca-bot\\ORG_BOT_UNIFIED",
+  "search_dirs": [
+    "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\runtime\\paper\\logs",
+    "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\runtime\\paper\\validation_v2",
+    "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\ops\\evidence"
+  ],
+  "output_dir": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\ops\\analytics\\expectancy_engine\\out",
+  "runtime_safe": true,
+  "read_only_inputs": true,
+  "scheduled_task_mutation": false,
+  "wrapper_mutation": false,
+  "orchestrator_mutation": false
+}

@@ -1,0 +1,101 @@
+from __future__ import annotations
+import multiprocessing as _mp  # TBOT_MP_GUARD_V1
+
+import argparse
+import os
+import sys
+import traceback
+
+BANNER = "TBOT Trading Runtime (Enterprise CLI)"
+
+
+def build_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(prog="tbot.main", description=BANNER)
+    p.add_argument("--smoke", action="store_true", help="print identity/session info and exit 0")
+    p.add_argument("--run", action="store_true", help="run orchestrator loop")
+    p.add_argument("--iters", type=int, default=999999, help="max iterations")
+    p.add_argument("--sleep", type=float, default=0.5, help="sleep seconds")
+    return p
+
+
+def smoke() -> int:
+    print("TBOT_SMOKE_OK")
+    print("CWD=", os.getcwd())
+    print("PYTHONPATH=", os.environ.get("PYTHONPATH"))
+    print("TBOT_RUNROOT=", os.environ.get("TBOT_RUNROOT"))
+    print("TBOT_LOGDIR=", os.environ.get("TBOT_LOGDIR"))
+    print("SYS_EXEC=", sys.executable)
+    return 0
+
+
+def _acquire_named_mutex_or_exit() -> None:
+    # Windows Named Mutex - single instance.
+    # ExitCode 86 indicates "already running".
+    try:
+        import ctypes  # type: ignore
+
+        CreateMutexW = ctypes.windll.kernel32.CreateMutexW
+        GetLastError = ctypes.windll.kernel32.GetLastError
+
+        name = r"Global\TBOT_MAIN_RUNTIME"
+        h = CreateMutexW(None, False, name)
+        if GetLastError() == 183:  # ERROR_ALREADY_EXISTS
+            print("TBOT_SINGLE_INSTANCE_BLOCKED_MUTEX", name)
+            raise SystemExit(86)
+
+        # keep handle referenced globally
+        globals()["_TBOT_MUTEX_HANDLE"] = h
+    except SystemExit:
+        raise
+    except Exception as e:
+        print("TBOT_MUTEX_ERROR", repr(e))
+        raise SystemExit(86)
+
+
+def main(argv: list[str] | None = None) -> int:
+    # ==== TBOT_MP_GUARD_V1 BEGIN ====
+    # Prevent Windows multiprocessing 'spawn' child from running the bot logic.
+ {
+     multiprocessing as _mp
+     _mp.current_process().name != "MainProcess":
+        ("TBOT_MP_CHILD_BLOCKED", _mp.current_process().name)
+         0
+    } except Exception as _e:
+    ("TBOT_MP_GUARD_ERROR", repr(_e))
+    # ==== TBOT_MP_GUARD_V1 END ====
+    _acquire_named_mutex_or_exit()
+
+    parser = build_parser()
+    args = parser.parse_args(argv)
+
+    if args.smoke:
+        return smoke()
+
+    if not args.run:
+        parser.print_help()
+        return 0
+
+    # run loop
+    from tbot.runtime.orchestrator import run_loop
+    run_loop(args)
+    return 0
+
+
+if __name__ == "__main__":
+    # Critical for Windows spawn semantics
+    try:
+        import multiprocessing  # type: ignore
+        multiprocessing.freeze_support()
+    except Exception:
+        pass
+
+    try:
+        rc = main()
+        raise SystemExit(rc)
+    except SystemExit:
+        raise
+    except Exception:
+        print("TBOT_FATAL_EXCEPTION")
+        traceback.print_exc()
+        raise SystemExit(1)
+

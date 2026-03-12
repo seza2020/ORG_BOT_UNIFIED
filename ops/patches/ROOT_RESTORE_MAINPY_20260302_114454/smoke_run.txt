@@ -1,0 +1,27 @@
+[PERSIST_CAP] day=2026-03-02 valid_accepts=0 orig_cap=15 effective_cap=15
+INFO  | 2026-03-02T11:44:59 | 5d2915fa | boot {'iterations': 3, 'sleep_sec': 0.1, 'daily_alpha_kill_r': -2.0, 'weekly_kill_r': -5.0, 'sim_daily_r': 0.0, 'sim_week_r': 0.0, 'sim_trade': False, 'force_signal_sid': None, 'shadow_enabled': False, 'shadow_path': None, 'shadow_risk_usd': None, 'shadow_max_qty': None, 'gate': None, 'strategies': [{'sid': 'S01', 'is_alpha': False}, {'sid': 'S11', 'is_alpha': True}]}
+INFO  | 2026-03-02T11:45:10 | 5d2915fa | regime {'regime': 'TREND', 'confidence': 0.0, 'alpha_mode': 'ON'}
+INFO  | 2026-03-02T11:45:10 | 5d2915fa | core_context {'bias': 'SHORT', 'trend_strength': 0.000289624993892731, 'vwap_state': 'ABOVE', 'ema_sep': 0.39787264141205014, 'reason': 'core_ctx_v2_scaled'}
+INFO  | 2026-03-02T11:45:10 | 5d2915fa | alpha_mode {'mode': 'OFF', 'cap_ratio': 0.0, 'reason': 'alpha_off_trend_weak(ts=0.000,th=0.35)'}
+INFO  | 2026-03-02T11:45:10 | 5d2915fa | signal_eval {'sid': 'S01'}
+INFO  | 2026-03-02T11:45:10 | 5d2915fa | strategy_result {'sid': 'S01', 'mvp_env': '0', 'has_core_context': True, 'has_alpha_mode': True, 'returned': 'NONE', 'symbol': None, 'side': None, 'confidence': None, 'reason': None}
+INFO  | 2026-03-02T11:45:10 | 5d2915fa | signal_eval {'sid': 'S11'}
+INFO  | 2026-03-02T11:45:10 | 5d2915fa | strategy_result {'sid': 'S11', 'mvp_env': '0', 'has_core_context': True, 'has_alpha_mode': True, 'returned': 'NONE', 'symbol': None, 'side': None, 'confidence': None, 'reason': None}
+INFO  | 2026-03-02T11:45:10 | 5d2915fa | HEARTBEAT in_session=True pre_close=False alpha_kill=False portfolio_kill=False daily_r=+0.00 week_r=+0.00 active=None
+INFO  | 2026-03-02T11:45:20 | 5d2915fa | regime {'regime': 'TREND', 'confidence': 0.0, 'alpha_mode': 'ON'}
+INFO  | 2026-03-02T11:45:20 | 5d2915fa | core_context {'bias': 'SHORT', 'trend_strength': 0.00021136018055203248, 'vwap_state': 'ABOVE', 'ema_sep': 0.2570471189262662, 'reason': 'core_ctx_v2_scaled'}
+INFO  | 2026-03-02T11:45:20 | 5d2915fa | alpha_mode {'mode': 'OFF', 'cap_ratio': 0.0, 'reason': 'alpha_off_trend_weak(ts=0.000,th=0.35)'}
+INFO  | 2026-03-02T11:45:20 | 5d2915fa | signal_eval {'sid': 'S01'}
+INFO  | 2026-03-02T11:45:20 | 5d2915fa | strategy_result {'sid': 'S01', 'mvp_env': '0', 'has_core_context': True, 'has_alpha_mode': True, 'returned': 'NONE', 'symbol': None, 'side': None, 'confidence': None, 'reason': None}
+INFO  | 2026-03-02T11:45:20 | 5d2915fa | signal_eval {'sid': 'S11'}
+INFO  | 2026-03-02T11:45:20 | 5d2915fa | strategy_result {'sid': 'S11', 'mvp_env': '0', 'has_core_context': True, 'has_alpha_mode': True, 'returned': 'NONE', 'symbol': None, 'side': None, 'confidence': None, 'reason': None}
+INFO  | 2026-03-02T11:45:20 | 5d2915fa | HEARTBEAT in_session=True pre_close=False alpha_kill=False portfolio_kill=False daily_r=+0.00 week_r=+0.00 active=None
+INFO  | 2026-03-02T11:45:30 | 5d2915fa | regime {'regime': 'TREND', 'confidence': 0.0, 'alpha_mode': 'ON'}
+INFO  | 2026-03-02T11:45:30 | 5d2915fa | core_context {'bias': 'SHORT', 'trend_strength': 0.5002082571025315, 'vwap_state': 'BELOW', 'ema_sep': 0.07808894420003298, 'reason': 'core_ctx_v2_scaled'}
+INFO  | 2026-03-02T11:45:30 | 5d2915fa | alpha_mode {'mode': 'CAP50', 'cap_ratio': 0.5, 'reason': 'alpha_cap_trend(ts=0.500,th=0.35)'}
+INFO  | 2026-03-02T11:45:30 | 5d2915fa | signal_eval {'sid': 'S01'}
+INFO  | 2026-03-02T11:45:30 | 5d2915fa | strategy_result {'sid': 'S01', 'mvp_env': '0', 'has_core_context': True, 'has_alpha_mode': True, 'returned': 'NONE', 'symbol': None, 'side': None, 'confidence': None, 'reason': None}
+INFO  | 2026-03-02T11:45:30 | 5d2915fa | signal_eval {'sid': 'S11'}
+INFO  | 2026-03-02T11:45:30 | 5d2915fa | strategy_result {'sid': 'S11', 'mvp_env': '0', 'has_core_context': True, 'has_alpha_mode': True, 'returned': 'NONE', 'symbol': None, 'side': None, 'confidence': None, 'reason': None}
+INFO  | 2026-03-02T11:45:30 | 5d2915fa | HEARTBEAT in_session=True pre_close=False alpha_kill=False portfolio_kill=False daily_r=+0.00 week_r=+0.00 active=None
+INFO  | 2026-03-02T11:45:30 | 5d2915fa | shutdown {'ok': True, 'final_state': {'in_session': True, 'pre_close': False, 'alpha_kill': False, 'portfolio_kill': False, 'pending': False, 'active': None, 'daily_r': 0.0, 'week_r': 0.0}}

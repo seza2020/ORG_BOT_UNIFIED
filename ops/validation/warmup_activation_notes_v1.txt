@@ -1,0 +1,25 @@
+WARMUP ACTIVATION NOTES V1
+
+RATIONALE
+Current system exhibits strategy starvation dominated by alpha_mode_off.
+Warmup relaxes confidence threshold and alpha acceptance policy in a controlled paper-only mode.
+
+APPROVED PARAMETERS
+confidence_threshold=0.30
+min_rr=1.5
+max_plans_per_day=10
+cooldown_seconds=180
+risk_per_trade_r=0.5
+daily_kill_r=-1.5
+alpha_policy=ALLOW_ON_AND_CAP50
+
+NOT APPROVED
+No live use
+No RR below 1.5
+No risk_per_trade above 0.5R
+
+SUCCESS CRITERIA
+Trades >= 30
+Expectancy > 0
+ProfitFactor > 1.2
+MaxDrawdown > -5R

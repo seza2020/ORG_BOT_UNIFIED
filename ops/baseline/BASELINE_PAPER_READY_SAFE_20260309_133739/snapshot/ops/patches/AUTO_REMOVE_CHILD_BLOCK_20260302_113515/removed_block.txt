@@ -1,0 +1,32 @@
+# --- CHILD_FAIL_CLOSED_V2 BEGIN ---
+# Hard fail if this process is spawned by another tbot.main python
+try:
+    import os as _os
+    import sys as _sys
+    _ppid = _os.getppid()
+    _is_child = False
+    try:
+        # No-spawn parent cmdline inspection (psutil)
+        # Optional operational bypass: TBOT_CHILD_GUARD=0
+        if _os.getenv("TBOT_CHILD_GUARD","1") != "1":
+            _is_child = False
+        else:
+            try:
+                import psutil as _ps
+                _pp = _ps.Process(_ppid)
+                _pcmd = " ".join(_pp.cmdline() or [])
+                if ("tbot.main" in _pcmd) and ("python" in _pcmd.lower()):
+                    _is_child = True
+            except Exception:
+                # If psutil is unavailable or access denied, do NOT spawn; keep default (_is_child False).
+                pass
+    except Exception:
+        pass
+if _is_child:
+        raise SystemExit(97)
+except SystemExit:
+    raise
+except Exception:
+    # fail closed
+    raise
+# --- CHILD_FAIL_CLOSED_V2 END ---

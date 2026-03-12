@@ -1,0 +1,76 @@
+# --- SINGLE INSTANCE GUARD (ORG_BOT_UNIFIED_PAPER_PY_MUTEX) ---
+# This blocks re-entry / self-spawn of tbot.main on Windows.
+import os, sys
+try:
+    import msvcrt  # noqa: F401
+    import ctypes
+    from ctypes import wintypes
+    _MUTEX_NAME = r"Global\ORG_BOT_UNIFIED_TBOT_MAIN_RUN"
+    _CreateMutexW = ctypes.windll.kernel32.CreateMutexW
+    _CreateMutexW.argtypes = [wintypes.LPVOID, wintypes.BOOL, wintypes.LPCWSTR]
+    _CreateMutexW.restype = wintypes.HANDLE
+    _GetLastError = ctypes.windll.kernel32.GetLastError
+
+    _h = _CreateMutexW(None, True, _MUTEX_NAME)
+    _err = _GetLastError()
+    # ERROR_ALREADY_EXISTS = 183
+    if _h and _err == 183:
+        # Exit cleanly; another instance already running.
+        # Keep it extremely early to prevent child loop.
+        print("TBOT_SINGLE_INSTANCE_BLOCK: mutex already exists", file=sys.stderr)
+        raise SystemExit(0)
+except Exception:
+    # If anything goes wrong, do not prevent runtime; but log to stderr.
+    pass
+# --- END SINGLE INSTANCE GUARD ---
+from __future__ import annotations
+# --- TBOT_FAILCLOSED_RUNROOT_GUARD (V2) ---
+import os as _os
+def _tbot_require_runroot():
+    rr = (_os.environ.get("TBOT_RUNROOT") or "").strip()
+    if not rr:
+        raise SystemExit(2)
+_tbot_require_runroot()
+# --- /TBOT_FAILCLOSED_RUNROOT_GUARD ---
+
+import argparse
+import os
+import sys
+import time
+import traceback
+
+def build_argparser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(prog="tbot")
+    p.add_argument("--profile", default=os.environ.get("TBOT_PROFILE","PAPER"))
+    p.add_argument("--run", action="store_true")
+    p.add_argument("--iters", type=int, default=999999)
+    p.add_argument("--sleep", type=float, default=0.5)
+    return p
+
+def entrypoint(argv: list[str] | None = None) -> int:
+    argv = argv if argv is not None else sys.argv[1:]
+    args = build_argparser().parse_args(argv)
+
+    # Late import to avoid import-time side effects
+    from tbot.runtime.orchestrator import run_loop
+
+    try:
+        run_loop(
+            profile=str(args.profile).upper(),
+            iters=int(args.iters),
+            sleep=float(args.sleep),
+        )
+        return 0
+    except SystemExit:
+        raise
+    except Exception:
+        traceback.print_exc()
+        return 1
+
+def main() -> None:
+    raise SystemExit(entrypoint())
+
+if __name__ == "__main__":
+    main()
+
+

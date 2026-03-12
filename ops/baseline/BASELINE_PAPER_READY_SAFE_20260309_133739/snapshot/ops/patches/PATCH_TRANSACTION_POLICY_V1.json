@@ -1,0 +1,54 @@
+{
+  "version": "PATCH_TRANSACTION_POLICY_V1",
+  "project_root": "C:\\alpaca-bot\\ORG_BOT_UNIFIED",
+  "legacy_root": "C:\\alpaca-bot\\org_bot",
+  "canonical_python": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\code\\.venv\\Scripts\\python.exe",
+  "runtime_root": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\runtime\\paper",
+  "logs_root": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\runtime\\paper\\logs",
+  "audit_root": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\ops\\audit\\patch_transactions",
+  "evidence_root": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\ops\\evidence\\patch_transactions",
+  "patch_root": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\ops\\patches",
+  "approved_registry": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\ops\\audit\\approved_patch_registry.json",
+  "baseline_pointer": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\ops\\audit\\approved_baseline_pointer.json",
+  "observability": {
+    "required_logs": [
+      "meta_events.jsonl",
+      "meta_engine.jsonl"
+    ],
+    "optional_logs": [
+      "hardening_events.jsonl",
+      "shadow_plans.jsonl",
+      "hardened_shadow_plans.jsonl",
+      "spawn_trap.jsonl",
+      "createprocess_trap.jsonl",
+      "supervisor_events.jsonl",
+      "supervisor_events.v3.jsonl"
+    ],
+    "require_json_sanity": true,
+    "json_tail_lines": 50
+  },
+  "path_controls": {
+    "task_wrapper_roots": [
+      "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\ops\\task_wrappers",
+      "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\ops\\tasks"
+    ],
+    "red_flag_legacy_root": "C:\\alpaca-bot\\org_bot",
+    "preferred_root": "C:\\alpaca-bot\\ORG_BOT_UNIFIED"
+  },
+  "runtime_controls": {
+    "require_single_instance": true,
+    "tbot_process_match": "tbot\\.main",
+    "max_allowed_tbot_processes": 1
+  },
+  "validation": {
+    "run_compile_check": true,
+    "run_wrapper_path_audit": true,
+    "run_json_sanity": true,
+    "run_process_audit": true,
+    "stop_on_failure": true
+  },
+  "approval": {
+    "write_approved_registry": true,
+    "allow_promote_only_on_full_pass": true
+  }
+}

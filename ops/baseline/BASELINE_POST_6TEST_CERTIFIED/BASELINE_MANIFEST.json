@@ -1,0 +1,36 @@
+{
+  "baseline_name": "BASELINE_POST_6TEST_CERTIFIED",
+  "created_at": "2026-03-09T18:27:40",
+  "root": "C:\\alpaca-bot\\ORG_BOT_UNIFIED",
+  "code_root": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\code",
+  "runtime_root": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\runtime\\paper",
+  "ops_root": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\ops",
+  "canonical_python": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\code\\.venv\\Scripts\\python.exe",
+  "canonical_governor_start": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\ops\\canon\\Start-TbotCanonical.ps1",
+  "canonical_governor_stop": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\ops\\canon\\Stop-TbotCanonical.ps1",
+  "canonical_governor_assert": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\ops\\canon\\Assert-TbotSingleFamily.ps1",
+  "canonical_governor_watch": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\ops\\canon\\Watch-TbotFamilyLive.ps1",
+  "excluded_from_ops_snapshot": [
+    "baseline",
+    "evidence"
+  ],
+  "excluded_from_ops_hash": [
+    "baseline",
+    "evidence"
+  ],
+  "snapshot_code": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\ops\\baseline\\BASELINE_POST_6TEST_CERTIFIED\\snapshot\\code",
+  "snapshot_ops": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\ops\\baseline\\BASELINE_POST_6TEST_CERTIFIED\\snapshot\\ops",
+  "snapshot_runtime": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\ops\\baseline\\BASELINE_POST_6TEST_CERTIFIED\\snapshot\\runtime_paper",
+  "fingerprint_dir": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\ops\\baseline\\BASELINE_POST_6TEST_CERTIFIED\\fingerprint",
+  "audit_dir": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\ops\\baseline\\BASELINE_POST_6TEST_CERTIFIED\\audit",
+  "rollback_script": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\ops\\baseline\\BASELINE_POST_6TEST_CERTIFIED\\rollback\\RESTORE_BASELINE.ps1",
+  "certification": {
+    "test5_runtime_drift": "PASS",
+    "dualpid_family_aware_governance": "PASS",
+    "test3_restart_resilience": "PASS",
+    "test2_lock_system": "PASS",
+    "test6_dryrun_stability": "PASS",
+    "test1_clean_start": "PASS",
+    "test4_log_continuity": "PASS"
+  }
+}

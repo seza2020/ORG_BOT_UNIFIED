@@ -1,0 +1,8 @@
+RUN_PAPER_START 2026-03-02T08:19:12.7025045-08:00
+Enter-OrgUnifiedSingleInstance: C:\alpaca-bot\ORG_BOT_UNIFIED\ops\task_wrappers\ORG_UNIFIED_PAPER_RUN.ps1:24
+Line |
+  24 |  $mutex = Enter-OrgUnifiedSingleInstance -Profile "PAPER" -RuntimeRoot …
+     |           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | The property 'Count' cannot be found on this object. Verify that the property exists.
+RUN_PAPER_END exitcode=1
+SECTION5A_DONE

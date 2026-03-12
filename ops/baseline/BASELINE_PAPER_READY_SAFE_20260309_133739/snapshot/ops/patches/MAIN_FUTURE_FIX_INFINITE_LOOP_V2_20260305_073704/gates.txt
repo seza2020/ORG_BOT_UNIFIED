@@ -1,0 +1,8 @@
+=== COMPILEALL ===
+C:\alpaca-bot\ORG_BOT_UNIFIED\code\tbot\analytics\perf_tracker.py:182: SyntaxWarning: invalid escape sequence '\<'
+  - ثبت در runtime\<profile>\analytics\performance.json
+COMPILEALL_OK= True
+
+=== IMPORT ===
+TBOT_CHILD_SPAWN_BLOCKED parent_is_python=1 ppid= 16012
+

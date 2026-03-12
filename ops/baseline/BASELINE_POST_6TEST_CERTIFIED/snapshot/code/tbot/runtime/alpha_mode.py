@@ -1,0 +1,21 @@
+from __future__ import annotations
+
+from tbot.policy.alpha_mode import decide_alpha_mode
+
+def compute_alpha_mode(core_ctx, regime):
+    try:
+        reg = str((regime or {}).get("regime") or "CHOP").upper()
+        bias = str((core_ctx or {}).get("bias") or "FLAT").upper()
+        ts = float((core_ctx or {}).get("trend_strength") or 0.0)
+
+        if bias == "FLAT":
+            return {"mode": "OFF", "cap_ratio": 0.0, "reason": "alpha_off_flat_bias"}
+
+        d = decide_alpha_mode(regime=reg, bias=bias, trend_strength=ts)
+        return {
+            "mode": getattr(d, "mode", "OFF"),
+            "cap_ratio": float(getattr(d, "cap_ratio", 0.0) or 0.0),
+            "reason": getattr(d, "reason", "alpha_mode_unknown"),
+        }
+    except Exception as e:
+        return {"mode": "OFF", "cap_ratio": 0.0, "reason": f"alpha_mode_exception:{type(e).__name__}"}

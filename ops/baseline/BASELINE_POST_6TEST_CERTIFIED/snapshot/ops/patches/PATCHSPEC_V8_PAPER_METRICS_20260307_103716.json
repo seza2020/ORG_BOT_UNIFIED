@@ -1,0 +1,11 @@
+{
+  "version": "PATCHSPEC_V8",
+  "name": "PAPER_METRICS",
+  "target": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\ops\\task_wrappers\\ORG_UNIFIED_RUNTIME_MANAGER.ps1",
+  "operations": [
+    {
+      "type": "append",
+      "text": "\r\n# PATCH_V8_PAPER_METRICS_BEGIN\ntry{\n\n$metrics=\"C:\\alpaca-bot\\ORG_BOT_UNIFIED\\runtime\\paper\\logs\\paper_runtime_metrics.jsonl\"\n$dir=Split-Path $metrics\nNew-Item -ItemType Directory -Force $dir|Out-Null\n\n$run_id=[guid]::NewGuid().ToString()\n\n$row=[ordered]@{\nkind=\"paper_runtime_metrics_v8\"\nrun_id=$run_id\npid=$PID\nts=(Get-Date).ToString(\"s\")\nprofile=$env:TBOT_PROFILE\nwrapper=\"ORG_UNIFIED_RUNTIME_MANAGER.ps1\"\n}\n\n($row|ConvertTo-Json -Compress)|Add-Content $metrics -Encoding UTF8\n\n}catch{\nWrite-Host \"Paper metrics instrumentation failed\"\n}\n# PATCH_V8_PAPER_METRICS_END\r\n"
+    }
+  ]
+}

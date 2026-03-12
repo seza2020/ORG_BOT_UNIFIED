@@ -1,0 +1,5 @@
+RUNROOT=C:\alpaca-bot\ORG_BOT_UNIFIED\runtime\paper
+ERRORS_COUNT=0
+WARN_COUNT=0
+---- ERRORS ----
+---- WARNINGS ----

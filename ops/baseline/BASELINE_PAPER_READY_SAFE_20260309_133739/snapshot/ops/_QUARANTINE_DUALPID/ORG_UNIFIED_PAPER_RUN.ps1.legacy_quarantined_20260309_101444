@@ -1,0 +1,30 @@
+$ErrorActionPreference = "Stop"
+Set-StrictMode -Version Latest
+
+$U       = "C:\alpaca-bot\ORG_BOT_UNIFIED"
+$OPS     = Join-Path $U "ops"
+$WRAPDIR = Join-Path $OPS "task_wrappers"
+$CODE    = Join-Path $U "code"
+$RUNTIME = Join-Path $U "runtime\paper"
+$LOGS    = Join-Path $RUNTIME "logs"
+$PWSH    = "C:\Program Files\PowerShell\7\pwsh.exe"
+$MANAGER = Join-Path $WRAPDIR "ORG_UNIFIED_RUNTIME_MANAGER.ps1"
+
+if (!(Test-Path -LiteralPath $MANAGER)) { throw "MANAGER_NOT_FOUND=$MANAGER" }
+if (!(Test-Path -LiteralPath $PWSH))    { throw "PWSH_NOT_FOUND=$PWSH" }
+if (!(Test-Path -LiteralPath $LOGS))    { New-Item -ItemType Directory -Force -Path $LOGS | Out-Null }
+
+$stdout = Join-Path $LOGS "org_unified_paper_run.stdout.log"
+$stderr = Join-Path $LOGS "org_unified_paper_run.stderr.log"
+
+Set-Location $CODE
+
+$p = Start-Process -FilePath $PWSH `
+  -ArgumentList @("-NoProfile","-ExecutionPolicy","Bypass","-File",$MANAGER) `
+  -WorkingDirectory $CODE `
+  -RedirectStandardOutput $stdout `
+  -RedirectStandardError $stderr `
+  -PassThru
+
+Start-Sleep -Seconds 1
+exit 0

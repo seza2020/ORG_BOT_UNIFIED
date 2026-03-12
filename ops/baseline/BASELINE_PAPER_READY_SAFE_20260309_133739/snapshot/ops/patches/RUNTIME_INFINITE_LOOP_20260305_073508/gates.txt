@@ -1,0 +1,7 @@
+*** Error compiling 'C:\\alpaca-bot\\ORG_BOT_UNIFIED\\code\\tbot\\main.py'...
+  File "C:\alpaca-bot\ORG_BOT_UNIFIED\code\tbot\main.py", line 13
+    from __future__ import annotations
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+SyntaxError: from __future__ imports must occur at the beginning of the file
+
+COMPILEALL_OK= False

@@ -1,0 +1,13 @@
+=== COMPILE ===
+Sorry: IndentationError: expected an indented block after function definition on line 29 (main.py, line 31)
+
+=== IMPORT ===
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import tbot.main; print('IMPORT_OK')
+    ^^^^^^^^^^^^^^^^
+  File "C:\alpaca-bot\ORG_BOT_UNIFIED\code\tbot\main.py", line 31
+    parser = build_parser()
+    ^^^^^^
+IndentationError: expected an indented block after function definition on line 29
+

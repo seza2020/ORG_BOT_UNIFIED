@@ -1,0 +1,35 @@
+NOTE=C:\alpaca-bot\ORG_BOT_UNIFIED\code\logs\ops\audit\PAPER_FREEZE_GO_NOGO_20260311_190053.txt
+TS_LOCAL=03/11/2026 19:00:53
+RUNROOT=C:\alpaca-bot\ORG_BOT_UNIFIED\runtime\paper
+LOGS=C:\alpaca-bot\ORG_BOT_UNIFIED\runtime\paper\logs
+FREEZE_ROOT=C:\alpaca-bot\ORG_BOT_UNIFIED\runtime\paper\logs\freeze
+
+LATEST_FREEZE_ZIP=C:\alpaca-bot\ORG_BOT_UNIFIED\runtime\paper\logs\freeze\FREEZE_TODAY_20260311_184242.zip
+ZIP_SIZE_BYTES=1270749
+
+--- ZIP_ENTRY_COUNT=10 ---
+
+FullName                      Length LastWriteTime
+--------                      ------ -------------
+announce_freeze_build.txt        190 3/11/2026 6:42:42 PM -07:00
+env_TBOT_SAFE_snapshot.txt        76 3/11/2026 6:42:42 PM -07:00
+meta_engine.jsonl            2959323 3/11/2026 1:00:56 PM -07:00
+meta_events.jsonl           51215487 3/11/2026 1:00:56 PM -07:00
+meta_runtime_paper.jsonl           0 3/11/2026 6:25:00 PM -07:00
+QC_freeze_manifest.txt           135 3/11/2026 6:42:42 PM -07:00
+run_index_freeze.txt             263 3/11/2026 6:42:42 PM -07:00
+shadow_plans.jsonl           1559529 3/10/2026 7:37:06 AM -07:00
+strategy_perf_daily.csv      2560426 3/11/2026 1:00:56 PM -07:00
+strategy_perf_snapshot.json     1528 3/11/2026 1:00:56 PM -07:00
+
+
+[OK] ZIP_HAS_REQUIRED_FILES
+EXTRACT_DST=C:\alpaca-bot\ORG_BOT_UNIFIED\runtime\paper\logs\freeze_extracted\FREEZE_TODAY_20260311_184242
+PARSED_OK_LINES= 19209 BAD= 0
+   19209  __NO_KIND__
+LIVE_META_OK_LINES= 0 BAD= 0
+[OK] LIVE_META_CURRENTLY_VALID
+
+====================
+GO: READY_FOR_TOMORROW
+====================

@@ -1,0 +1,21 @@
+=== COMPILEALL ===
+C:\alpaca-bot\ORG_BOT_UNIFIED\code\tbot\analytics\perf_tracker.py:182: SyntaxWarning: invalid escape sequence '\<'
+  - ثبت در runtime\<profile>\analytics\performance.json
+*** Error compiling 'C:\\alpaca-bot\\ORG_BOT_UNIFIED\\code\\tbot\\main.py'...
+  File "C:\alpaca-bot\ORG_BOT_UNIFIED\code\tbot\main.py", line 17
+    from __future__ import annotations
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+SyntaxError: from __future__ imports must occur at the beginning of the file
+
+COMPILEALL_OK= False
+
+=== IMPORT ===
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import tbot.main; print('IMPORT_OK=1')
+    ^^^^^^^^^^^^^^^^
+  File "C:\alpaca-bot\ORG_BOT_UNIFIED\code\tbot\main.py", line 17
+    from __future__ import annotations
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+SyntaxError: from __future__ imports must occur at the beginning of the file
+

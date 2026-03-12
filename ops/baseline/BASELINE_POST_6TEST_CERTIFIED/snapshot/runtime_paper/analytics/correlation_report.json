@@ -1,0 +1,40 @@
+{
+  "ts": 1772592963.2754366,
+  "ok": true,
+  "reason": "OK",
+  "runroot": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\runtime\\paper",
+  "enabled_in": [
+    "S01"
+  ],
+  "enabled_out": [
+    "S01"
+  ],
+  "blocked_sids": [],
+  "violations": [],
+  "blocked_pairs_top": [],
+  "inputs": {
+    "meta_events_path": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\runtime\\paper\\logs\\meta_events.jsonl",
+    "events_scanned": 618,
+    "observations_used": 0,
+    "window_sec": 259200.0,
+    "lookback_events": 2000
+  },
+  "cfg": {
+    "enabled": true,
+    "lookback_events": 2000,
+    "window_sec": 259200,
+    "max_same_symbol_enabled": 1,
+    "max_same_side_on_symbol": 1,
+    "block_if_cooccur_rate_ge": 0.7,
+    "min_pair_samples": 20,
+    "sources": {
+      "rotation_enabled": "rotation_enabled_sids.json",
+      "meta_enabled": "meta_enabled_sids.json"
+    },
+    "outputs": {
+      "correlation_blocklist": "correlation_blocklist.json",
+      "correlation_report": "correlation_report.json",
+      "correlation_history": "correlation_history.jsonl"
+    }
+  }
+}

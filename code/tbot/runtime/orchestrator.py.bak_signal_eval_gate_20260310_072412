@@ -1,0 +1,281 @@
+import os
+import json
+import time
+import traceback
+
+def _runroot() -> str:
+    return os.getenv("TBOT_RUNROOT") or os.path.join(os.getcwd(), "runtime", "paper")
+
+def _meta_path() -> str:
+    return os.path.join(_runroot(), "logs", "meta_events.jsonl")
+
+def _engine_path() -> str:
+    return os.path.join(_runroot(), "logs", "meta_engine.jsonl")
+
+def _shadow_path() -> str:
+    return os.path.join(_runroot(), "logs", "shadow_plans.jsonl")
+
+def _emit(kind: str, payload: dict, level: str = "INFO", run_id=None) -> None:
+    try:
+        p = _meta_path()
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        row = {
+            "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "level": level,
+            "kind": kind,
+            "run_id": run_id,
+            "payload": payload or {},
+        }
+        with open(p, "a", encoding="utf-8") as f:
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+    except Exception:
+        pass
+
+def _emit_engine(name: str, payload: dict, run_id=None) -> None:
+    try:
+        p = _engine_path()
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        row = {
+            "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "name": name,
+            "run_id": run_id,
+            "payload": payload or {},
+        }
+        with open(p, "a", encoding="utf-8") as f:
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+    except Exception:
+        pass
+
+def _safe_build_market_snapshot(symbols, run_id=None):
+    try:
+        from tbot.market.market_provider import build_market_snapshot
+    except BaseException as e:
+        _emit(
+            "market_snapshot_import_fail",
+            {
+                "error_type": type(e).__name__,
+                "error": str(e),
+                "traceback": traceback.format_exc(limit=8),
+            },
+            level="ERROR",
+            run_id=run_id,
+        )
+        return None
+
+    try:
+        return build_market_snapshot(tuple(symbols))
+    except BaseException as e:
+        _emit(
+            "market_snapshot_call_fail",
+            {
+                "error_type": type(e).__name__,
+                "error": str(e),
+                "traceback": traceback.format_exc(limit=8),
+            },
+            level="ERROR",
+            run_id=run_id,
+        )
+        return None
+
+def _safe_regime(snapshot, run_id=None):
+    try:
+        from tbot.runtime.regime import compute_regime
+        return compute_regime(snapshot)
+    except BaseException as e:
+        _emit(
+            "regime_fail",
+            {
+                "error_type": type(e).__name__,
+                "error": str(e),
+                "traceback": traceback.format_exc(limit=8),
+            },
+            level="ERROR",
+            run_id=run_id,
+        )
+        return {"regime": "ERROR", "confidence": 0.0, "alpha_mode": "OFF", "reason": "regime_fail"}
+
+def _safe_core_context(snapshot, regime, run_id=None):
+    try:
+        from tbot.runtime.core_context import build_core_context
+        return build_core_context(snapshot, regime)
+    except BaseException as e:
+        _emit(
+            "core_context_fail",
+            {
+                "error_type": type(e).__name__,
+                "error": str(e),
+                "traceback": traceback.format_exc(limit=8),
+            },
+            level="ERROR",
+            run_id=run_id,
+        )
+        return {"bias": "FLAT", "trend_strength": 0.0, "reason": "core_context_fail"}
+
+def _safe_alpha_mode(core_ctx, regime, run_id=None):
+    try:
+        from tbot.runtime.alpha_mode import compute_alpha_mode
+        return compute_alpha_mode(core_ctx, regime)
+    except BaseException as e:
+        _emit(
+            "alpha_mode_fail",
+            {
+                "error_type": type(e).__name__,
+                "error": str(e),
+                "traceback": traceback.format_exc(limit=8),
+            },
+            level="ERROR",
+            run_id=run_id,
+        )
+        return {"mode": "OFF", "cap_ratio": 0.0, "reason": "alpha_mode_fail"}
+
+def _compute_validation_plan(snap, symbols, regime, core_ctx, alpha, run_id=None):
+    sym = symbols[0] if symbols else "SPY"
+    snap_obj = getattr(snap, sym, None)
+    if snap_obj is None:
+        return None, "snapshot_symbol_missing"
+
+    last = getattr(snap_obj, "last", None)
+    vwap = getattr(snap_obj, "vwap", None)
+    ema_fast = getattr(snap_obj, "ema_fast", None)
+    ema_slow = getattr(snap_obj, "ema_slow", None)
+
+    ref = last if last is not None else vwap
+    if ref is None:
+        return None, "no_price_reference"
+
+    entry = float(ref)
+
+    bias = str(core_ctx.get("bias") or "FLAT").upper()
+    side = "BUY"
+    if bias in ("SHORT", "SELL", "BEARISH"):
+        side = "SELL"
+
+    stop_pct = 0.005
+    tp_pct = 0.010
+
+    if side == "BUY":
+        stop = entry * (1.0 - stop_pct)
+        tp = entry * (1.0 + tp_pct)
+        rr = (tp - entry) / max(1e-9, (entry - stop))
+    else:
+        stop = entry * (1.0 + stop_pct)
+        tp = entry * (1.0 - tp_pct)
+        rr = (entry - tp) / max(1e-9, (stop - entry))
+
+    conf = float(regime.get("confidence", 0.0) or 0.0)
+
+    plan = {
+        "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "run_id": run_id,
+        "sid": "A_VALIDATION_PIPELINE_V1",
+        "symbol": sym,
+        "side": side,
+        "entry": round(float(entry), 4),
+        "stop": round(float(stop), 4),
+        "tp": round(float(tp), 4),
+        "rr": round(float(rr), 4),
+        "confidence": round(conf, 4),
+        "reason": "validation_plan_live_snapshot_v1",
+        "regime": regime.get("regime"),
+        "bias": core_ctx.get("bias"),
+        "alpha_mode": alpha.get("mode"),
+        "price_ref": {
+            "last": last,
+            "vwap": vwap,
+            "ema_fast": ema_fast,
+            "ema_slow": ema_slow,
+        },
+    }
+    return plan, "ok"
+
+def run_loop(args):
+    run_id = getattr(args, "run_id", None)
+    iters = int(getattr(args, "iters", 999999) or 999999)
+    sleep_s = float(getattr(args, "sleep", 0.5) or 0.5)
+    symbols = getattr(args, "symbols", None) or ["SPY", "QQQ", "IWM", "NVDA", "AAPL", "TSLA"]
+
+    boot_payload = {"iters": iters, "sleep": sleep_s, "symbols": list(symbols)}
+    print("boot", boot_payload, flush=True)
+    _emit("boot", boot_payload, run_id=run_id)
+
+    for i in range(iters):
+        _emit_engine("run_loop_enter", {"i": i, "symbols": list(symbols)}, run_id=run_id)
+
+        snap = _safe_build_market_snapshot(symbols, run_id=run_id)
+
+        hb = {"i": i, "has_snapshot": bool(snap is not None)}
+        print("heartbeat", hb, flush=True)
+        _emit("heartbeat", hb, run_id=run_id)
+
+        if not snap:
+            if sleep_s > 0:
+                time.sleep(sleep_s)
+            continue
+
+        regime = _safe_regime(snap, run_id=run_id)
+        _emit("regime", regime, run_id=run_id)
+
+        core_ctx = _safe_core_context(snap, regime, run_id=run_id)
+        _emit("core_context", core_ctx, run_id=run_id)
+
+        alpha = _safe_alpha_mode(core_ctx, regime, run_id=run_id)
+        _emit("alpha_mode", alpha, run_id=run_id)
+
+        strategy_result = {
+            "symbol_count": len(symbols),
+            "snapshot_ok": True,
+            "regime": regime.get("regime"),
+            "bias": core_ctx.get("bias"),
+            "alpha_mode": alpha.get("mode"),
+            "reason": "validation_runtime_active_v1",
+        }
+        _emit("strategy_result", strategy_result, run_id=run_id)
+
+        plan, plan_reason = _compute_validation_plan(
+            snap=snap,
+            symbols=symbols,
+            regime=regime,
+            core_ctx=core_ctx,
+            alpha=alpha,
+            run_id=run_id,
+        )
+
+        if plan is None:
+            _emit(
+                "plan_skipped",
+                {
+                    "reason": plan_reason,
+                    "symbol": symbols[0] if symbols else "SPY",
+                },
+                run_id=run_id,
+            )
+            if sleep_s > 0:
+                time.sleep(sleep_s)
+            continue
+
+        try:
+            sp = _shadow_path()
+            os.makedirs(os.path.dirname(sp), exist_ok=True)
+            with open(sp, "a", encoding="utf-8") as f:
+                f.write(json.dumps(plan, ensure_ascii=False) + "\n")
+            _emit("plan_created", plan, run_id=run_id)
+            _emit("shadow_written", {"symbol": plan["symbol"], "sid": plan["sid"], "rr": plan["rr"]}, run_id=run_id)
+        except BaseException as e:
+            _emit(
+                "shadow_written",
+                {
+                    "error_type": type(e).__name__,
+                    "error": str(e),
+                    "traceback": traceback.format_exc(limit=8),
+                },
+                level="ERROR",
+                run_id=run_id,
+            )
+
+        if sleep_s > 0:
+            time.sleep(sleep_s)
+
+    shut = {"rc": 0, "iters": iters}
+    print("shutdown", shut, flush=True)
+    _emit("shutdown", shut, run_id=run_id)
+    return 0

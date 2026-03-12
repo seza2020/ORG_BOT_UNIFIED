@@ -1,0 +1,22 @@
+{
+  "date": "2026-03-02",
+  "max_day_risk": 500.0,
+  "used_risk": 3.0,
+  "reserved_risk": 0.0,
+  "commit_count": 1,
+  "open_reservations": 0,
+  "events": {
+    "strategy_result": 62,
+    "signal_eval": 62,
+    "risk_reserve_ok": 0,
+    "risk_reserve_reject": 0,
+    "risk_reserve_error": 0,
+    "risk_charge_error": 0,
+    "shutdown": 1,
+    "boot": 1
+  },
+  "checks": {
+    "no_open_reservations": true,
+    "risk_not_exceeded": true
+  }
+}

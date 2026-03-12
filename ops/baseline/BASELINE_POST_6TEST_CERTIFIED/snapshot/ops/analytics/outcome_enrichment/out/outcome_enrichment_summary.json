@@ -1,0 +1,23 @@
+{
+  "system_version": "OUTCOME_ENRICHMENT_V1",
+  "generated_at": "2026-03-07T12:24:14",
+  "source_file": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\runtime\\paper\\validation_v2\\outcome_ledger.jsonl",
+  "reconciliation_file": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\runtime\\paper\\validation_v2\\outcome_reconciliation.csv",
+  "source_exists": true,
+  "reconciliation_exists": false,
+  "source_records_total": 2,
+  "open_records_total": 2,
+  "resolved_records": 0,
+  "unresolved_records": 2,
+  "conflict_records": 0,
+  "win_records": 0,
+  "loss_records": 0,
+  "reconciliation_conflicts": 0,
+  "resolution_rate": 0.0,
+  "outputs": {
+    "enriched_ledger": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\ops\\analytics\\outcome_enrichment\\out\\outcome_ledger_enriched.jsonl",
+    "audit_log": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\ops\\analytics\\outcome_enrichment\\out\\outcome_enrichment_audit.jsonl",
+    "summary_json": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\ops\\analytics\\outcome_enrichment\\out\\outcome_enrichment_summary.json",
+    "unresolved_csv": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\ops\\analytics\\outcome_enrichment\\out\\unresolved_outcomes.csv"
+  }
+}

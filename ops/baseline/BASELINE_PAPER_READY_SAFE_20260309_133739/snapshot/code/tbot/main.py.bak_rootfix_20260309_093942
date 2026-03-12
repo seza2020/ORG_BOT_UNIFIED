@@ -1,0 +1,117 @@
+from __future__ import annotations
+
+# >>> FOCUSED_IMPORT_CHAIN_ISOLATION_V1 >>>
+import json as _tbot_iso_json
+import time as _tbot_iso_time
+import os as _tbot_iso_os
+import sys as _tbot_iso_sys
+
+def _tbot_import_iso_v1(kind: str, payload: dict | None = None) -> None:
+    try:
+        rr = _tbot_iso_os.environ.get("TBOT_RUNROOT", r"C:\alpaca-bot\ORG_BOT_UNIFIED")
+        p = _tbot_iso_os.path.join(rr, "runtime", "paper", "logs", "focused_import_chain_isolation_v1.jsonl")
+        row = {
+            "ts": _tbot_iso_time.strftime("%Y-%m-%d %H:%M:%S"),
+            "kind": kind,
+            "pid": _tbot_iso_os.getpid(),
+            "ppid": _tbot_iso_os.getppid(),
+            "argv": _tbot_iso_sys.argv,
+            "cwd": _tbot_iso_os.getcwd(),
+            "executable": _tbot_iso_sys.executable,
+            "payload": payload or {},
+        }
+        _tbot_iso_os.makedirs(_tbot_iso_os.path.dirname(p), exist_ok=True)
+        with open(p, "a", encoding="utf-8") as f:
+            f.write(_tbot_iso_json.dumps(row, ensure_ascii=False) + "\n")
+    except Exception:
+        pass
+# <<< FOCUSED_IMPORT_CHAIN_ISOLATION_V1 <<<
+
+import argparse
+_tbot_import_iso_v1("checkpoint_before_import_multiprocessing", {})
+import multiprocessing
+_tbot_import_iso_v1("checkpoint_after_import_multiprocessing", {})
+import os
+import sys
+import time
+import traceback
+
+BANNER = "ORG_BOT_UNIFIED Runtime"
+
+
+def build_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(prog="tbot.main", description=BANNER)
+    p.add_argument("--smoke", action="store_true", help="print identity/session info and exit 0")
+    p.add_argument("--run", action="store_true", help="run orchestrator loop")
+    p.add_argument("--iters", type=int, default=999999, help="max iterations")
+    p.add_argument("--sleep", type=float, default=0.5, help="sleep seconds")
+    return p
+
+
+def smoke() -> int:
+    print("TBOT_SMOKE_OK")
+    print("CWD=", os.getcwd())
+    print("PYTHONPATH=", os.environ.get("PYTHONPATH"))
+    print("TBOT_RUNROOT=", os.environ.get("TBOT_RUNROOT"))
+    print("SYS_EXEC=", sys.executable)
+    return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = build_parser()
+    args = parser.parse_args(argv)
+
+    if args.smoke:
+        return smoke()
+
+    if not args.run:
+        parser.print_help()
+        return 0
+
+    _tbot_import_iso_v1("checkpoint_before_import_orchestrator", {})
+    _tbot_import_iso_v1("checkpoint_before_import_orchestrator", {})
+    from tbot.runtime.orchestrator import run_loop
+    _tbot_import_iso_v1("checkpoint_after_import_orchestrator", {})
+    _tbot_import_iso_v1("checkpoint_after_import_orchestrator", {})
+
+    _tbot_import_iso_v1("checkpoint_before_import_market_provider", {})
+    from tbot.market.market_provider import build_market_snapshot  # diagnostic import only
+    _tbot_import_iso_v1("checkpoint_after_import_market_provider", {})
+
+    _tbot_import_iso_v1("checkpoint_before_import_strategies_base", {})
+    from tbot.strategies.base import MarketSnapshot  # diagnostic import only
+    _tbot_import_iso_v1("checkpoint_after_import_strategies_base", {})
+
+    _tbot_import_iso_v1("checkpoint_before_import_market_provider", {})
+    from tbot.market.market_provider import build_market_snapshot  # diagnostic only
+    _tbot_import_iso_v1("checkpoint_after_import_market_provider", {})
+
+    _tbot_import_iso_v1("checkpoint_before_import_strategies_base", {})
+    from tbot.strategies.base import MarketSnapshot  # diagnostic only
+    _tbot_import_iso_v1("checkpoint_after_import_strategies_base", {})
+
+    print("TBOT_MAIN_DAEMON_MODE", flush=True)
+
+    while True:
+        try:
+            run_loop(args)
+        except Exception:
+            print("TBOT_RUN_LOOP_CRASH", flush=True)
+            traceback.print_exc()
+        time.sleep(5)
+
+
+if __name__ == "__main__":
+    multiprocessing.freeze_support()
+    try:
+        rc = main()
+        raise SystemExit(rc)
+    except SystemExit:
+        raise
+    except Exception:
+        print("TBOT_FATAL_EXCEPTION")
+        traceback.print_exc()
+        raise SystemExit(1)
+
+
+

@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+
+# Runtime / logs
+runtime/**/logs/
+*.jsonl
+*.zip
+*.log
+
+# Evidence / snapshots
+ops/evidence/
+ops/audit/
+*_MYGPT_UPLOAD/
+freeze_backups/
+snapshots/
+
+# Secrets
+.env
+.env.*
+*.key
+*secret*
+*secrets*
+*token*
+*credential*
+*credentials*
+
+# OS
+Thumbs.db
+.DS_Store

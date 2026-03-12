@@ -1,0 +1,17 @@
+{
+  "ts": 1772588387.8981884,
+  "config": {
+    "min_trades": 30,
+    "kill_pf": 1.0,
+    "kill_expectancy": 0.0,
+    "kill_dd_pl": 200.0
+  },
+  "kill_count": 0,
+  "keep_count": 0,
+  "kill": [],
+  "keep": [],
+  "notes": {
+    "proxy_warning": "HARD_DD_PL_PROXY uses sum_pl (not true dd). For institutional DD: log per-trade pnl series per sid.",
+    "safe_default": "no kill for n<min_trades unless hard proxy triggers"
+  }
+}

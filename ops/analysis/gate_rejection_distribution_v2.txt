@@ -1,0 +1,421 @@
+GATE REJECTION DISTRIBUTION V2
+
+META_FILE=C:\alpaca-bot\ORG_BOT_UNIFIED\runtime\paper\logs\meta_events.jsonl
+
+=== RAW EVENT KIND COUNTS ===
+regime = 10086
+heartbeat = 10086
+alpha_mode = 10086
+core_context = 10086
+strategy_result = 10086
+signal_eval = 6380
+gate_decision = 6380
+plan_skipped = 6293
+rejection_reason = 6293
+shadow_written = 3793
+plan_created = 3793
+eligibility_bypass = 921
+strategy_health_bypass = 921
+risk_ledger_bypass = 921
+portfolio_risk_bypass = 921
+meta_strategy_bypass = 921
+core_context_fail = 710
+alpha_mode_fail = 710
+regime_fail = 710
+boot = 39
+
+=== OVERALL REASONS ===
+alpha_mode_off = 17340
+validation_runtime_active_v1 = 10086
+core_context_from_snapshot_v1 = 9376
+signal_eval_runtime_v1 = 6380
+gate_rejected_upstream = 4605
+regime_exception:NameError = 4204
+validation_plan_live_snapshot_v1 = 3793
+chop_spread(0.0004) = 3062
+alpha_off_chop(ts=0.030) = 2605
+alpha_off_chop(ts=0.046) = 2573
+confidence_below_min = 1539
+regime_fail = 710
+core_context_fail = 710
+alpha_mode_fail = 710
+chop_spread(0.0002) = 448
+chop_spread(0.0001) = 417
+alpha_off_chop(ts=0.025) = 339
+chop_spread(0.0003) = 290
+alpha_off_chop(ts=0.042) = 203
+chop_spread(0.0007) = 177
+chop_spread(0.0000) = 122
+alpha_off_chop(ts=0.029) = 108
+chop_spread(0.0006) = 102
+alpha_off_chop(ts=0.021) = 97
+chop_spread(0.0005) = 97
+alpha_off_chop(ts=0.012) = 95
+alpha_off_chop(ts=0.053) = 95
+ok = 87
+alpha_off_chop(ts=0.020) = 82
+alpha_off_chop(ts=0.037) = 77
+alpha_off_chop(ts=0.050) = 69
+alpha_off_chop(ts=0.015) = 68
+alpha_off_chop(ts=0.031) = 67
+alpha_off_chop(ts=0.032) = 66
+alpha_off_chop(ts=0.014) = 64
+alpha_off_chop(ts=0.023) = 64
+alpha_off_chop(ts=0.013) = 64
+alpha_off_chop(ts=0.019) = 64
+alpha_off_chop(ts=0.055) = 56
+alpha_off_chop(ts=0.078) = 55
+alpha_off_chop(ts=0.043) = 55
+alpha_off_chop(ts=0.073) = 54
+alpha_off_chop(ts=0.051) = 54
+alpha_off_chop(ts=0.017) = 54
+alpha_off_chop(ts=0.003) = 54
+alpha_off_chop(ts=0.016) = 53
+alpha_off_chop(ts=0.027) = 53
+alpha_off_chop(ts=0.034) = 53
+alpha_off_chop(ts=0.011) = 47
+alpha_off_chop(ts=0.018) = 43
+alpha_off_chop(ts=0.038) = 42
+alpha_off_chop(ts=0.036) = 42
+alpha_off_chop(ts=0.072) = 42
+alpha_cap_chop_strong(ts=0.081,th=0.08) = 42
+alpha_off_chop(ts=0.022) = 42
+alpha_off_chop(ts=0.076) = 41
+alpha_off_chop(ts=0.054) = 41
+mid_spread(0.0011) = 41
+alpha_off_chop(ts=0.077) = 41
+alpha_off_chop(ts=0.008) = 41
+alpha_off_chop(ts=0.041) = 41
+alpha_off_chop(ts=0.052) = 41
+alpha_off_chop(ts=0.047) = 40
+chop_spread(0.0008) = 40
+alpha_off_chop(ts=0.001) = 35
+alpha_off_chop(ts=0.028) = 33
+alpha_off_chop(ts=0.026) = 32
+alpha_off_chop(ts=0.070) = 28
+alpha_off_chop(ts=0.084) = 28
+alpha_off_chop(ts=0.062) = 28
+alpha_off_chop(ts=0.010) = 28
+alpha_off_chop(ts=0.035) = 28
+mid_spread(0.0009) = 28
+alpha_off_chop(ts=0.033) = 28
+alpha_off_chop(ts=0.085) = 28
+alpha_cap_chop_strong(ts=0.131,th=0.08) = 27
+alpha_off_high_vol(ts=0.212) = 27
+alpha_off_chop(ts=0.065) = 27
+alpha_off_chop(ts=0.002) = 27
+mid_spread(0.0014) = 27
+alpha_off_chop(ts=0.080) = 27
+alpha_off_chop(ts=0.083) = 26
+alpha_off_chop(ts=0.009) = 26
+alpha_off_chop(ts=0.005) = 26
+mid_spread(0.0015) = 26
+alpha_off_chop(ts=0.007) = 26
+alpha_cap_chop_strong(ts=0.203,th=0.08) = 26
+alpha_off_chop(ts=0.048) = 26
+mid_spread(0.0017) = 26
+alpha_off_chop(ts=0.093) = 26
+alpha_off_chop(ts=0.040) = 26
+alpha_off_chop(ts=0.060) = 24
+alpha_off_chop(ts=0.071) = 20
+high_vol_pvwap(0.0154) = 19
+alpha_off_chop(ts=0.057) = 19
+alpha_off_chop(ts=0.045) = 19
+alpha_cap_chop_strong(ts=0.193,th=0.08) = 19
+mid_spread(0.0016) = 19
+high_vol_pvwap(0.0145) = 18
+alpha_off_chop(ts=0.059) = 17
+alpha_off_chop(ts=0.102) = 16
+high_vol_pvwap(0.0140) = 15
+alpha_cap_chop_strong(ts=0.087,th=0.08) = 14
+alpha_off_chop(ts=0.075) = 14
+alpha_off_chop(ts=0.049) = 14
+alpha_off_high_vol(ts=0.232) = 14
+alpha_cap_chop_strong(ts=0.095,th=0.08) = 14
+alpha_off_chop(ts=0.064) = 14
+alpha_cap_chop_strong(ts=0.171,th=0.08) = 14
+alpha_cap_chop_strong(ts=0.083,th=0.08) = 14
+alpha_off_chop(ts=0.039) = 14
+alpha_off_chop(ts=0.068) = 14
+alpha_off_high_vol(ts=0.265) = 14
+alpha_cap_chop_strong(ts=0.098,th=0.08) = 14
+alpha_off_high_vol(ts=0.238) = 14
+alpha_cap_chop_strong(ts=0.090,th=0.08) = 14
+alpha_cap_chop_strong(ts=0.094,th=0.08) = 14
+alpha_off_chop(ts=0.081) = 14
+alpha_off_chop(ts=0.067) = 14
+alpha_off_chop(ts=0.107) = 14
+alpha_off_chop(ts=0.079) = 14
+alpha_off_high_vol(ts=0.241) = 14
+alpha_cap_chop_strong(ts=0.091,th=0.08) = 14
+alpha_off_chop(ts=0.115) = 14
+alpha_off_high_vol(ts=0.211) = 14
+alpha_off_high_vol(ts=0.281) = 14
+alpha_cap_chop_strong(ts=0.133,th=0.08) = 14
+alpha_off_chop(ts=0.074) = 14
+alpha_off_high_vol(ts=0.271) = 14
+alpha_off_chop(ts=0.090) = 14
+alpha_off_high_vol(ts=0.188) = 14
+alpha_off_chop(ts=0.069) = 14
+alpha_cap_chop_strong(ts=0.118,th=0.08) = 13
+alpha_off_high_vol(ts=0.199) = 13
+alpha_off_chop(ts=0.063) = 13
+alpha_cap_chop_strong(ts=0.092,th=0.08) = 13
+alpha_off_chop(ts=0.101) = 13
+alpha_off_high_vol(ts=0.257) = 13
+high_vol_pvwap(0.0143) = 13
+alpha_cap_chop_strong(ts=0.179,th=0.08) = 13
+mid_spread(0.0010) = 13
+mid_spread(0.0008) = 13
+alpha_cap_chop_strong(ts=0.172,th=0.08) = 13
+alpha_off_high_vol(ts=0.214) = 13
+alpha_cap_chop_strong(ts=0.178,th=0.08) = 13
+alpha_off_high_vol(ts=0.255) = 13
+alpha_off_chop(ts=0.103) = 12
+high_vol_pvwap(0.0134) = 12
+alpha_off_high_vol(ts=0.282) = 12
+alpha_off_chop(ts=0.006) = 12
+alpha_off_chop(ts=0.086) = 12
+high_vol_pvwap(0.0147) = 11
+alpha_off_chop(ts=0.056) = 11
+alpha_off_chop(ts=0.004) = 10
+high_vol_pvwap(0.0126) = 10
+alpha_off_high_vol(ts=0.227) = 10
+high_vol_pvwap(0.0110) = 10
+alpha_off_chop(ts=0.122) = 10
+high_vol_pvwap(0.0148) = 10
+high_vol_pvwap(0.0155) = 9
+high_vol_pvwap(0.0151) = 8
+high_vol_pvwap(0.0164) = 8
+high_vol_pvwap(0.0139) = 8
+alpha_off_chop(ts=0.044) = 8
+high_vol_pvwap(0.0158) = 8
+alpha_off_high_vol(ts=0.224) = 7
+high_vol_pvwap(0.0153) = 7
+high_vol_pvwap(0.0171) = 7
+high_vol_pvwap(0.0157) = 4
+high_vol_pvwap(0.0123) = 4
+high_vol_pvwap(0.0144) = 4
+high_vol_pvwap(0.0109) = 4
+high_vol_pvwap(0.0125) = 4
+high_vol_pvwap(0.0162) = 4
+high_vol_pvwap(0.0124) = 4
+high_vol_pvwap(0.0152) = 4
+high_vol_pvwap(0.0138) = 4
+high_vol_pvwap(0.0122) = 3
+alpha_off_high_vol(ts=0.228) = 3
+alpha_off_chop(ts=0.061) = 2
+high_vol_pvwap(0.0127) = 2
+alpha_cap_chop_strong(ts=0.089,th=0.08) = 2
+high_vol_pvwap(0.0141) = 2
+high_vol_pvwap(0.0150) = 2
+high_vol_pvwap(0.0135) = 1
+high_vol_pvwap(0.0160) = 1
+high_vol_pvwap(0.0146) = 1
+high_vol_pvwap(0.0156) = 1
+high_vol_pvwap(0.0161) = 1
+alpha_off_high_vol(ts=0.213) = 1
+alpha_off_chop(ts=0.058) = 1
+high_vol_pvwap(0.0133) = 1
+
+=== KIND + REASON ===
+strategy_result :: validation_runtime_active_v1 = 10086
+core_context :: core_context_from_snapshot_v1 = 9376
+signal_eval :: signal_eval_runtime_v1 = 6380
+rejection_reason :: alpha_mode_off = 5780
+gate_decision :: alpha_mode_off = 5780
+plan_skipped :: alpha_mode_off = 5780
+regime :: regime_exception:NameError = 4204
+plan_created :: validation_plan_live_snapshot_v1 = 3793
+regime :: chop_spread(0.0004) = 3062
+alpha_mode :: alpha_off_chop(ts=0.030) = 2605
+alpha_mode :: alpha_off_chop(ts=0.046) = 2573
+portfolio_risk_bypass :: gate_rejected_upstream = 921
+eligibility_bypass :: gate_rejected_upstream = 921
+strategy_health_bypass :: gate_rejected_upstream = 921
+risk_ledger_bypass :: gate_rejected_upstream = 921
+meta_strategy_bypass :: gate_rejected_upstream = 921
+regime :: regime_fail = 710
+alpha_mode :: alpha_mode_fail = 710
+core_context :: core_context_fail = 710
+rejection_reason :: confidence_below_min = 513
+gate_decision :: confidence_below_min = 513
+plan_skipped :: confidence_below_min = 513
+regime :: chop_spread(0.0002) = 448
+regime :: chop_spread(0.0001) = 417
+alpha_mode :: alpha_off_chop(ts=0.025) = 339
+regime :: chop_spread(0.0003) = 290
+alpha_mode :: alpha_off_chop(ts=0.042) = 203
+regime :: chop_spread(0.0007) = 177
+regime :: chop_spread(0.0000) = 122
+alpha_mode :: alpha_off_chop(ts=0.029) = 108
+regime :: chop_spread(0.0006) = 102
+regime :: chop_spread(0.0005) = 97
+alpha_mode :: alpha_off_chop(ts=0.021) = 97
+alpha_mode :: alpha_off_chop(ts=0.053) = 95
+alpha_mode :: alpha_off_chop(ts=0.012) = 95
+gate_decision :: ok = 87
+alpha_mode :: alpha_off_chop(ts=0.020) = 82
+alpha_mode :: alpha_off_chop(ts=0.037) = 77
+alpha_mode :: alpha_off_chop(ts=0.050) = 69
+alpha_mode :: alpha_off_chop(ts=0.015) = 68
+alpha_mode :: alpha_off_chop(ts=0.031) = 67
+alpha_mode :: alpha_off_chop(ts=0.032) = 66
+alpha_mode :: alpha_off_chop(ts=0.014) = 64
+alpha_mode :: alpha_off_chop(ts=0.019) = 64
+alpha_mode :: alpha_off_chop(ts=0.023) = 64
+alpha_mode :: alpha_off_chop(ts=0.013) = 64
+alpha_mode :: alpha_off_chop(ts=0.055) = 56
+alpha_mode :: alpha_off_chop(ts=0.043) = 55
+alpha_mode :: alpha_off_chop(ts=0.078) = 55
+alpha_mode :: alpha_off_chop(ts=0.003) = 54
+alpha_mode :: alpha_off_chop(ts=0.073) = 54
+alpha_mode :: alpha_off_chop(ts=0.051) = 54
+alpha_mode :: alpha_off_chop(ts=0.017) = 54
+alpha_mode :: alpha_off_chop(ts=0.016) = 53
+alpha_mode :: alpha_off_chop(ts=0.027) = 53
+alpha_mode :: alpha_off_chop(ts=0.034) = 53
+alpha_mode :: alpha_off_chop(ts=0.011) = 47
+alpha_mode :: alpha_off_chop(ts=0.018) = 43
+alpha_mode :: alpha_off_chop(ts=0.038) = 42
+alpha_mode :: alpha_off_chop(ts=0.036) = 42
+alpha_mode :: alpha_off_chop(ts=0.072) = 42
+alpha_mode :: alpha_off_chop(ts=0.022) = 42
+alpha_mode :: alpha_cap_chop_strong(ts=0.081,th=0.08) = 42
+alpha_mode :: alpha_off_chop(ts=0.008) = 41
+alpha_mode :: alpha_off_chop(ts=0.077) = 41
+alpha_mode :: alpha_off_chop(ts=0.052) = 41
+alpha_mode :: alpha_off_chop(ts=0.076) = 41
+regime :: mid_spread(0.0011) = 41
+alpha_mode :: alpha_off_chop(ts=0.041) = 41
+alpha_mode :: alpha_off_chop(ts=0.054) = 41
+alpha_mode :: alpha_off_chop(ts=0.047) = 40
+regime :: chop_spread(0.0008) = 40
+alpha_mode :: alpha_off_chop(ts=0.001) = 35
+alpha_mode :: alpha_off_chop(ts=0.028) = 33
+alpha_mode :: alpha_off_chop(ts=0.026) = 32
+regime :: mid_spread(0.0009) = 28
+alpha_mode :: alpha_off_chop(ts=0.062) = 28
+alpha_mode :: alpha_off_chop(ts=0.033) = 28
+alpha_mode :: alpha_off_chop(ts=0.085) = 28
+alpha_mode :: alpha_off_chop(ts=0.035) = 28
+alpha_mode :: alpha_off_chop(ts=0.010) = 28
+alpha_mode :: alpha_off_chop(ts=0.070) = 28
+alpha_mode :: alpha_off_chop(ts=0.084) = 28
+regime :: mid_spread(0.0014) = 27
+alpha_mode :: alpha_off_chop(ts=0.002) = 27
+alpha_mode :: alpha_cap_chop_strong(ts=0.131,th=0.08) = 27
+alpha_mode :: alpha_off_high_vol(ts=0.212) = 27
+alpha_mode :: alpha_off_chop(ts=0.080) = 27
+alpha_mode :: alpha_off_chop(ts=0.065) = 27
+alpha_mode :: alpha_off_chop(ts=0.005) = 26
+alpha_mode :: alpha_off_chop(ts=0.040) = 26
+regime :: mid_spread(0.0017) = 26
+alpha_mode :: alpha_off_chop(ts=0.007) = 26
+alpha_mode :: alpha_off_chop(ts=0.083) = 26
+regime :: mid_spread(0.0015) = 26
+alpha_mode :: alpha_off_chop(ts=0.093) = 26
+alpha_mode :: alpha_off_chop(ts=0.048) = 26
+alpha_mode :: alpha_cap_chop_strong(ts=0.203,th=0.08) = 26
+alpha_mode :: alpha_off_chop(ts=0.009) = 26
+alpha_mode :: alpha_off_chop(ts=0.060) = 24
+alpha_mode :: alpha_off_chop(ts=0.071) = 20
+regime :: mid_spread(0.0016) = 19
+regime :: high_vol_pvwap(0.0154) = 19
+alpha_mode :: alpha_cap_chop_strong(ts=0.193,th=0.08) = 19
+alpha_mode :: alpha_off_chop(ts=0.057) = 19
+alpha_mode :: alpha_off_chop(ts=0.045) = 19
+regime :: high_vol_pvwap(0.0145) = 18
+alpha_mode :: alpha_off_chop(ts=0.059) = 17
+alpha_mode :: alpha_off_chop(ts=0.102) = 16
+regime :: high_vol_pvwap(0.0140) = 15
+alpha_mode :: alpha_off_high_vol(ts=0.232) = 14
+alpha_mode :: alpha_off_high_vol(ts=0.271) = 14
+alpha_mode :: alpha_cap_chop_strong(ts=0.091,th=0.08) = 14
+alpha_mode :: alpha_cap_chop_strong(ts=0.094,th=0.08) = 14
+alpha_mode :: alpha_off_chop(ts=0.074) = 14
+alpha_mode :: alpha_cap_chop_strong(ts=0.095,th=0.08) = 14
+alpha_mode :: alpha_off_high_vol(ts=0.211) = 14
+alpha_mode :: alpha_off_chop(ts=0.064) = 14
+alpha_mode :: alpha_cap_chop_strong(ts=0.171,th=0.08) = 14
+alpha_mode :: alpha_off_high_vol(ts=0.238) = 14
+alpha_mode :: alpha_cap_chop_strong(ts=0.133,th=0.08) = 14
+alpha_mode :: alpha_off_chop(ts=0.049) = 14
+alpha_mode :: alpha_off_high_vol(ts=0.265) = 14
+alpha_mode :: alpha_off_high_vol(ts=0.241) = 14
+alpha_mode :: alpha_cap_chop_strong(ts=0.083,th=0.08) = 14
+alpha_mode :: alpha_off_chop(ts=0.067) = 14
+alpha_mode :: alpha_cap_chop_strong(ts=0.090,th=0.08) = 14
+alpha_mode :: alpha_off_chop(ts=0.069) = 14
+alpha_mode :: alpha_cap_chop_strong(ts=0.098,th=0.08) = 14
+alpha_mode :: alpha_off_chop(ts=0.039) = 14
+alpha_mode :: alpha_off_chop(ts=0.068) = 14
+alpha_mode :: alpha_off_chop(ts=0.115) = 14
+alpha_mode :: alpha_off_chop(ts=0.081) = 14
+alpha_mode :: alpha_off_high_vol(ts=0.281) = 14
+alpha_mode :: alpha_off_chop(ts=0.075) = 14
+alpha_mode :: alpha_off_high_vol(ts=0.188) = 14
+alpha_mode :: alpha_off_chop(ts=0.079) = 14
+alpha_mode :: alpha_off_chop(ts=0.107) = 14
+alpha_mode :: alpha_cap_chop_strong(ts=0.087,th=0.08) = 14
+alpha_mode :: alpha_off_chop(ts=0.090) = 14
+alpha_mode :: alpha_off_high_vol(ts=0.255) = 13
+alpha_mode :: alpha_off_high_vol(ts=0.214) = 13
+alpha_mode :: alpha_cap_chop_strong(ts=0.172,th=0.08) = 13
+alpha_mode :: alpha_cap_chop_strong(ts=0.179,th=0.08) = 13
+regime :: mid_spread(0.0010) = 13
+regime :: high_vol_pvwap(0.0143) = 13
+regime :: mid_spread(0.0008) = 13
+alpha_mode :: alpha_cap_chop_strong(ts=0.178,th=0.08) = 13
+alpha_mode :: alpha_cap_chop_strong(ts=0.118,th=0.08) = 13
+alpha_mode :: alpha_off_high_vol(ts=0.257) = 13
+alpha_mode :: alpha_cap_chop_strong(ts=0.092,th=0.08) = 13
+alpha_mode :: alpha_off_chop(ts=0.063) = 13
+alpha_mode :: alpha_off_chop(ts=0.101) = 13
+alpha_mode :: alpha_off_high_vol(ts=0.199) = 13
+alpha_mode :: alpha_off_chop(ts=0.006) = 12
+alpha_mode :: alpha_off_chop(ts=0.103) = 12
+alpha_mode :: alpha_off_high_vol(ts=0.282) = 12
+regime :: high_vol_pvwap(0.0134) = 12
+alpha_mode :: alpha_off_chop(ts=0.086) = 12
+alpha_mode :: alpha_off_chop(ts=0.056) = 11
+regime :: high_vol_pvwap(0.0147) = 11
+regime :: high_vol_pvwap(0.0126) = 10
+alpha_mode :: alpha_off_chop(ts=0.004) = 10
+regime :: high_vol_pvwap(0.0148) = 10
+alpha_mode :: alpha_off_high_vol(ts=0.227) = 10
+regime :: high_vol_pvwap(0.0110) = 10
+alpha_mode :: alpha_off_chop(ts=0.122) = 10
+regime :: high_vol_pvwap(0.0155) = 9
+alpha_mode :: alpha_off_chop(ts=0.044) = 8
+regime :: high_vol_pvwap(0.0151) = 8
+regime :: high_vol_pvwap(0.0158) = 8
+regime :: high_vol_pvwap(0.0164) = 8
+regime :: high_vol_pvwap(0.0139) = 8
+alpha_mode :: alpha_off_high_vol(ts=0.224) = 7
+regime :: high_vol_pvwap(0.0171) = 7
+regime :: high_vol_pvwap(0.0153) = 7
+regime :: high_vol_pvwap(0.0125) = 4
+regime :: high_vol_pvwap(0.0138) = 4
+regime :: high_vol_pvwap(0.0152) = 4
+regime :: high_vol_pvwap(0.0124) = 4
+regime :: high_vol_pvwap(0.0123) = 4
+regime :: high_vol_pvwap(0.0109) = 4
+regime :: high_vol_pvwap(0.0157) = 4
+regime :: high_vol_pvwap(0.0162) = 4
+regime :: high_vol_pvwap(0.0144) = 4
+regime :: high_vol_pvwap(0.0122) = 3
+alpha_mode :: alpha_off_high_vol(ts=0.228) = 3
+alpha_mode :: alpha_off_chop(ts=0.061) = 2
+regime :: high_vol_pvwap(0.0150) = 2
+alpha_mode :: alpha_cap_chop_strong(ts=0.089,th=0.08) = 2
+regime :: high_vol_pvwap(0.0127) = 2
+regime :: high_vol_pvwap(0.0141) = 2
+regime :: high_vol_pvwap(0.0160) = 1
+alpha_mode :: alpha_off_high_vol(ts=0.213) = 1
+regime :: high_vol_pvwap(0.0146) = 1
+regime :: high_vol_pvwap(0.0133) = 1
+alpha_mode :: alpha_off_chop(ts=0.058) = 1
+regime :: high_vol_pvwap(0.0156) = 1
+regime :: high_vol_pvwap(0.0161) = 1
+regime :: high_vol_pvwap(0.0135) = 1

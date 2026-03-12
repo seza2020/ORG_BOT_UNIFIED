@@ -1,0 +1,29 @@
+START 2026-03-02T10:42:12.5033785-08:00
+PY=C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe
+CWD=C:\alpaca-bot\ORG_BOT_UNIFIED\code
+PYTHONPATH=C:\alpaca-bot\ORG_BOT_UNIFIED\code
+STARTED_PID=3616
+---- NEW_PID 3616 @ 2026-03-02T10:42:12.6312206-08:00 ----
+
+ProcessId       : 3616
+ParentProcessId : 19540
+Name            : python.exe
+ExecutablePath  : C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+CreationDate    : 3/2/2026 10:42:12 AM
+SessionId       : 1
+
+
+---- NEW_PID 4056 @ 2026-03-02T10:42:12.9780449-08:00 ----
+
+ProcessId       : 4056
+ParentProcessId : 3616
+Name            : python.exe
+ExecutablePath  : C:\Python313\python.exe
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+CreationDate    : 3/2/2026 10:42:12 AM
+SessionId       : 1
+
+
+=== SUMMARY ===
+UNIQUE_PIDS=2

@@ -1,0 +1,33 @@
+START 2026-03-02T10:47:44.7651227-08:00
+PY=C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe
+CWD=C:\alpaca-bot\ORG_BOT_UNIFIED\code
+PYTHONPATH=C:\alpaca-bot\ORG_BOT_UNIFIED\code
+STARTED_PID=28072
+---- NEW_PID 28072 @ 2026-03-02T10:47:44.8418275-08:00 ----
+
+ProcessId       : 28072
+ParentProcessId : 19540
+Name            : python.exe
+ExecutablePath  : C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+CreationDate    : 3/2/2026 10:47:44 AM
+SessionId       : 1
+
+
+GETPROCESS Id=28072 Path=C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe StartTime=3/2/2026 10:47:44 AM
+---- NEW_PID 26200 @ 2026-03-02T10:47:45.0994136-08:00 ----
+
+ProcessId       : 26200
+ParentProcessId : 28072
+Name            : python.exe
+ExecutablePath  : C:\Python313\python.exe
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+CreationDate    : 3/2/2026 10:47:44 AM
+SessionId       : 1
+
+
+GETPROCESS Id=26200 Path=C:\Python313\python.exe StartTime=3/2/2026 10:47:44 AM
+=== SUMMARY ===
+UNIQUE_PIDS=2
+PIDS=26200,28072
+DONE 2026-03-02T10:47:53.0049588-08:00

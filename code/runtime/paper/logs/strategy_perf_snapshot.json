@@ -1,0 +1,23 @@
+{
+  "ts": "2026-03-12 01:24:53",
+  "snapshot_count": 1,
+  "rows": [
+    {
+      "strategy_id": "A_VALIDATION_PIPELINE_V1",
+      "market_state": "CHOP",
+      "regime": "CHOP",
+      "event_count": 1878,
+      "plan_created_count": 0,
+      "plan_skipped_count": 939,
+      "rejection_count": 939,
+      "alpha_off_count": 1878,
+      "avg_confidence": 0.3348999999999935,
+      "avg_rr": 2.0,
+      "expectancy_r": null,
+      "win_rate": null,
+      "realized_r_count": 0,
+      "win_count": 0,
+      "loss_count": 0
+    }
+  ]
+}

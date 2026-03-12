@@ -1,0 +1,6 @@
+{
+  "min_trades": 30,
+  "kill_pf": 1.0,
+  "kill_expectancy": 0.0,
+  "kill_dd_pl": 200.0
+}

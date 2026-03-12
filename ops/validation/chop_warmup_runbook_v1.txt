@@ -1,0 +1,38 @@
+CHOP WARMUP RUNBOOK V1
+
+MODE=PAPER_CHOP_WARMUP
+PRIMARY_OBJECTIVE=DATA_ACQUISITION_IN_CHOP_ONLY
+
+PROFILE
+target_regime=CHOP
+confidence_threshold=0.30
+min_rr=1.5
+max_plans_per_day=6
+cooldown_seconds=240
+risk_per_trade_r=0.25
+daily_kill_r=-1.0
+alpha_policy=ALLOW_CAP50_ONLY_IN_CHOP
+
+PRE_SESSION_CHECKS
+1. verify runtime stable
+2. verify single family active
+3. verify risk ledger exists
+4. verify chop warmup profile present
+5. verify meta/perf logging active
+
+IN_SESSION_MONITORING
+1. monitor regime=CHOP
+2. monitor CAP50
+3. monitor plan_created
+4. monitor plan_skipped
+5. monitor daily kill threshold
+
+POST_SESSION_REVIEW
+1. compute trade count
+2. compute expectancy
+3. compute PF
+4. compute DD
+5. compute rejection distribution
+
+END_CONDITION
+Trades >= 20 OR 10 trading days

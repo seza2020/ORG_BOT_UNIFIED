@@ -1,0 +1,39 @@
+from __future__ import annotations
+
+"""
+Authoritative TBOT entry dispatcher.
+
+Single-instance enforcement is handled exclusively in:
+    tbot.runtime.single_instance
+
+This file must remain minimal and deterministic.
+"""
+
+import sys
+import traceback
+
+
+def entrypoint() -> int:
+    """
+    Canonical entrypoint called by tbot.main.
+    No mutex logic here.
+    """
+    try:
+        from tbot.core.app import run_app  # <-- adjust if your real app module differs
+    except Exception as e:
+        sys.stderr.write(f"[ENTRY_IMPORT_FAIL] {repr(e)}\n")
+        traceback.print_exc()
+        return 1
+
+    try:
+        return int(run_app())
+    except SystemExit:
+        raise
+    except Exception as e:
+        sys.stderr.write(f"[ENTRY_RUNTIME_EXCEPTION] {repr(e)}\n")
+        traceback.print_exc()
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(entrypoint())

@@ -1,0 +1,142 @@
+import time
+import traceback
+
+
+# ==== TBOT_META_EVENTS_CANON_V1 BEGIN ====
+import json as _tbot_json
+import os as _tbot_os
+from datetime import datetime as _tbot_dt
+
+def _tbot_meta_path() -> str:
+    rr = _tbot_os.getenv("TBOT_RUNROOT") or "."
+    return _tbot_os.path.join(rr, "logs", "meta_events.jsonl")
+
+def _tbot_meta_emit(kind: str, payload: dict, level: str = "INFO") -> None:
+    try:
+        p = _tbot_meta_path()
+        d = _tbot_os.path.dirname(p) or "."
+        _tbot_os.makedirs(d, exist_ok=True)
+        row = {
+            "ts": _tbot_dt.utcnow().isoformat(timespec="seconds") + "Z",
+            "level": level,
+            "kind": kind,
+            "payload": payload,
+        }
+        with open(p, "a", encoding="utf-8") as f:
+            f.write(_tbot_json.dumps(row, ensure_ascii=False, separators=(",", ":")) + "\n")
+    except Exception:
+        pass
+# ==== TBOT_META_EVENTS_CANON_V1 END ====
+
+# --- optional event emit (best-effort) ---
+# ==== TBOT_META_EVENTS_WIRE_V2B BEGIN ====
+import os as _tbot_os
+import json as _tbot_json
+import datetime as _tbot_dt
+
+def _tbot_meta_events_path() -> str:
+    rr = _tbot_os.getenv("TBOT_RUNROOT", ".")
+    return _tbot_os.path.join(rr, "logs", "meta_events.jsonl")
+
+def _tbot_meta_emit(kind: str, payload: dict, level: str="INFO", run_id: str="") -> None:
+    try:
+        p = _tbot_meta_events_path()
+        _tbot_os.makedirs(_tbot_os.path.dirname(p), exist_ok=True)
+        row = {
+            "ts": _tbot_dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "level": level,
+            "kind": kind,
+            "run_id": run_id,
+            "payload": payload or {},
+        }
+        with open(p, "a", encoding="utf-8") as f:
+            f.write(_tbot_json.dumps(row, ensure_ascii=False) + "\n")
+    except Exception:
+        pass
+# ==== TBOT_META_EVENTS_WIRE_V2B END ====
+def _safe_emit_meta(kind: str, payload: dict, level: str="INFO"):
+    try:
+        from tbot.meta.meta import meta
+        from tbot.meta.announce import announce
+        from tbot.meta.events import make_event
+        ev = make_event(level=level, kind=kind, payload=payload)
+        meta.emit(ev)
+        announce.emit(ev)
+    except Exception:
+        # fallback: no-op
+        pass
+
+def compute_regime(snapshot: dict) -> dict:
+    # placeholder – keep deterministic schema
+    return {"regime": snapshot.get("regime", "UNKNOWN"), "confidence": float(snapshot.get("confidence", 0.0)), "alpha_mode": "ON"}
+
+def build_core_context(snapshot: dict, regime: dict) -> dict:
+    # placeholder – keep deterministic schema
+    return {"bias": snapshot.get("bias", "FLAT"), "trend_strength": float(snapshot.get("trend_strength", 0.0)), "reason": "core_ctx_clean_v2"}
+
+def compute_alpha_mode(core_ctx: dict, regime: dict) -> dict:
+    # placeholder rule: alpha ON unless trend_strength too weak
+    ts = float(core_ctx.get("trend_strength", 0.0))
+    th = 0.35
+    if ts < th:
+        return {"mode": "OFF", "cap_ratio": 0.0, "reason": f"alpha_off_trend_weak(ts={ts:.3f},th={th})"}
+    return {"mode": "ON", "cap_ratio": 1.0, "reason": "alpha_on_clean_v2"}
+
+def _call_strategy(mod, ctx: dict, alpha_mode: dict):
+    # support multiple strategy APIs safely
+    if hasattr(mod, "generate_signal"):
+        return mod.generate_signal(ctx)
+    if hasattr(mod, "get_signal"):
+        return mod.get_signal(ctx)
+    if hasattr(mod, "eval_signal"):
+        return mod.eval_signal(ctx, alpha_mode=alpha_mode)
+    return None
+
+def run_loop(args):
+    """
+    Canonical enterprise-stable run loop:
+      - MarketSnapshot-aware
+      - Always writes meta_events.jsonl under TBOT_RUNROOT\\logs
+      - Prints boot/heartbeat/shutdown for operator visibility
+    """
+    import os, json, time
+    from tbot.market.market_provider import build_market_snapshot
+
+    runroot = os.getenv("TBOT_RUNROOT") or os.path.join(os.getcwd(), "runtime", "paper")
+    logdir = os.path.join(runroot, "logs")
+    os.makedirs(logdir, exist_ok=True)
+    meta_path = os.path.join(logdir, "meta_events.jsonl")
+
+    def emit(kind, payload, level="INFO"):
+        row = {
+            "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "level": level,
+            "kind": kind,
+            "run_id": getattr(args, "run_id", None),
+            "payload": payload,
+        }
+        with open(meta_path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+
+    # normalize args
+    iters = int(getattr(args, "iters", 5) or 5)
+    sleep_s = float(getattr(args, "sleep", 0.5) or 0.5)
+    symbols = getattr(args, "symbols", None) or ["SPY","QQQ","IWM","NVDA","AAPL","TSLA"]
+
+    boot_payload = {"iters": iters, "sleep": sleep_s, "symbols": list(symbols)}
+    print("boot", boot_payload)
+    emit("boot", boot_payload)
+
+    for i in range(iters):
+        snap = build_market_snapshot(symbols)
+        hb = {"i": i, "has_snapshot": bool(snap is not None)}
+        print("heartbeat", hb)
+        emit("heartbeat", hb)
+        if sleep_s > 0:
+            time.sleep(sleep_s)
+
+    shut = {"rc": 0, "iters": iters}
+    print("shutdown", shut)
+    emit("shutdown", shut)
+    return 0
+

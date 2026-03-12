@@ -1,0 +1,220 @@
+from __future__ import annotations
+
+# --- TBOT_PATCH_BAR_SCHEMA_BEGIN ---
+def _bar_get(bar, key, fallback_key):
+    # Supports dict-like bars from REST: {'c','vw','t',...} or {'close','vwap','timestamp',...}
+    if isinstance(bar, dict):
+        if key in bar:
+            return bar.get(key)
+        return bar.get(fallback_key)
+    # Supports object-like bars (SDK)
+    if hasattr(bar, key):
+        return getattr(bar, key)
+    return getattr(bar, fallback_key, None)
+
+def _bar_close(bar):
+    return _bar_get(bar, "c", "close")
+
+def _bar_vwap(bar):
+    return _bar_get(bar, "vw", "vwap")
+
+def _bar_time(bar):
+    return _bar_get(bar, "t", "timestamp")
+# --- TBOT_PATCH_BAR_SCHEMA_END ---
+
+
+import os
+import json
+import urllib.request
+import urllib.error
+from urllib.parse import urlencode
+from dataclasses import dataclass
+from datetime import datetime, timezone, timedelta
+from typing import Dict, Tuple, Any, Optional
+
+
+# NOTE: MarketSnapshot container is permissive and is the expected shape for getattr(snap, "SPY")
+from tbot.strategies.base import MarketSnapshot as SnapshotContainer
+
+
+@dataclass(frozen=True)
+class MarketSnap:
+
+    def to_quote(self) -> dict:
+        # Standardized quote payload consumed by pricing/strategies.
+        # 'mid' falls back to 'last' when bid/ask are not present.
+        last = float(getattr(self, "last", 0.0) or 0.0)
+        bid = getattr(self, "bid", None)
+        ask = getattr(self, "ask", None)
+        try:
+            bid_f = float(bid) if bid is not None else None
+        except Exception:
+            bid_f = None
+        try:
+            ask_f = float(ask) if ask is not None else None
+        except Exception:
+            ask_f = None
+        mid = None
+        if bid_f is not None and ask_f is not None and bid_f > 0 and ask_f > 0:
+            mid = (bid_f + ask_f) / 2.0
+        else:
+            mid = last if last > 0 else None
+
+        ts = getattr(self, "ts", None)
+        out = {
+            "symbol": getattr(self, "symbol", None),
+            "last": last if last > 0 else None,
+            "bid": bid_f,
+            "ask": ask_f,
+            "mid": mid,
+            "vwap": float(getattr(self, "vwap", 0.0) or 0.0) if getattr(self, "vwap", None) is not None else None,
+            "ema_fast": float(getattr(self, "ema_fast", 0.0) or 0.0) if getattr(self, "ema_fast", None) is not None else None,
+            "ema_slow": float(getattr(self, "ema_slow", 0.0) or 0.0) if getattr(self, "ema_slow", None) is not None else None,
+            "bar_index": getattr(self, "bar_index", None),
+            "ts": ts,
+        }
+        return out
+
+    def to_dict(self) -> dict:
+        return self.to_quote()
+    symbol: str
+    last: Optional[float] = None
+    vwap: Optional[float] = None
+    ema_fast: Optional[float] = None
+    ema_slow: Optional[float] = None
+    bar_index: Optional[int] = None
+    @property
+    def ef(self) -> Optional[float]:
+        # Engine legacy alias: ef == ema_fast
+        return self.ema_fast
+
+    @property
+    def es(self) -> Optional[float]:
+        # Engine legacy alias: es == ema_slow
+        return self.ema_slow
+
+
+def _env(name: str) -> str:
+    return (os.environ.get(name) or "").strip()
+
+
+def _make_headers() -> Dict[str, str]:
+    kid = _env("APCA_API_KEY_ID") or _env("APCA_API_KEY")
+    sec = _env("APCA_API_SECRET_KEY") or _env("APCA_API_SECRET")
+
+    if "PUT_YOUR" in kid or "PUT_YOUR" in sec:
+        raise RuntimeError("APCA_KEYS_ARE_PLACEHOLDER")
+    if not kid or not sec:
+        raise RuntimeError("APCA_KEYS_MISSING")
+
+    return {
+        "Accept": "application/json",
+        "User-Agent": "tbot-market/1.0",
+        "APCA-API-KEY-ID": kid,
+        "APCA-API-SECRET-KEY": sec,
+    }
+
+
+# TBOT_HTTP_CACHE_THROTTLE (V3)
+_HTTP_CACHE = {}   # url -> (ts, body)
+_LAST_HTTP_TS = 0.0
+def _http_get(url: str, headers: Dict[str, str], timeout_sec: float = 10.0) -> str:
+    import time, os
+    import urllib.request
+    import urllib.error
+    global _LAST_HTTP_TS, _HTTP_CACHE
+
+    # Throttle: minimum interval between ANY HTTP calls (ms)
+    try:
+        min_ms = float(os.getenv("TBOT_HTTP_MIN_INTERVAL_MS", "300") or 0.0)
+    except Exception:
+        min_ms = 300.0
+
+    if min_ms and min_ms > 0:
+        now = time.time()
+        wait = (min_ms / 1000.0) - (now - float(_LAST_HTTP_TS or 0.0))
+        if wait > 0:
+            time.sleep(wait)
+        _LAST_HTTP_TS = time.time()
+
+    def _fenv(name: str, d: str) -> float:
+        try:
+            return float(os.getenv(name, d))
+        except Exception:
+            return float(d)
+
+    # Cache TTLs (seconds)
+    ttl_trade = _fenv("TBOT_HTTP_CACHE_TRADE_SEC", "15")
+    ttl_bars  = _fenv("TBOT_HTTP_CACHE_BARS_SEC",  "60")
+
+    ttl = 0.0
+    if "/trades/latest" in url or "/quotes/latest" in url:
+        ttl = ttl_trade
+    elif "/bars?" in url:
+        ttl = ttl_bars
+
+    # Fresh cache hit
+    if ttl and ttl > 0:
+        v = _HTTP_CACHE.get(url)
+        if v:
+            ts, body = v
+            if (time.time() - float(ts)) < ttl:
+                return body
+
+    # Retry/backoff on 429/5xx, fallback to cached body if exists
+    try:
+        retries = int(os.getenv("TBOT_HTTP_RETRIES", "4"))
+    except Exception:
+        retries = 4
+    base = _fenv("TBOT_HTTP_RETRY_BASE_SEC", "1.0")
+
+    last_err = None
+    for attempt in range(retries + 1):
+        try:
+            req = urllib.request.Request(url, headers=headers, method="GET")
+            with urllib.request.urlopen(req, timeout=timeout_sec) as r:
+                body = r.read().decode("utf-8", "replace")
+            if ttl and ttl > 0:
+                _HTTP_CACHE[url] = (time.time(), body)
+            return body
+
+        except urllib.error.HTTPError as e:
+            last_err = e
+            code = getattr(e, "code", None)
+
+            # If we have any cached body (even stale), prefer returning it over triggering fallback pricing
+            v = _HTTP_CACHE.get(url)
+            if v and code in (429,) or (isinstance(code, int) and code >= 500):
+                return v[1]
+
+            if code == 429 or (isinstance(code, int) and code >= 500):
+                ra = None
+                try:
+                    ra = e.headers.get("Retry-After")
+                except Exception:
+                    ra = None
+                try:
+                    sleep_s = float(ra) if ra else (base * (2 ** attempt))
+                except Exception:
+                    sleep_s = base * (2 ** attempt)
+                time.sleep(min(30.0, sleep_s))
+                continue
+            raise
+
+        except Exception as e:
+            last_err = e
+            v = _HTTP_CACHE.get(url)
+            if v:
+                return v[1]
+            time.sleep(min(10.0, base * (2 ** attempt)))
+            continue
+
+    raise last_err
+
+def _http_json(url: str, headers: Dict[str, str], timeout_sec: float = 10.0) -> Any:
+    return json.loads(_http_get(url, headers=headers, timeout_sec=timeout_sec))
+
+
+def _ema(series, span: int) -> Optional[float]:
+    if not series:
+        return None

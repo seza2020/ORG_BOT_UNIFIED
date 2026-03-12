@@ -1,0 +1,1 @@
+pid=23332 ppid=10272 mutex=Global\TBOT_MAIN_paper_24053 argv=['C:\\alpaca-bot\\ORG_BOT_UNIFIED\\code\\tbot\\main.py', '--smoke']

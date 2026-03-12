@@ -1,0 +1,75 @@
+﻿$ErrorActionPreference = "Stop"
+
+# === FIXED PATHS (deterministic) ===
+$U      = "C:\alpaca-bot\ORG_BOT_UNIFIED"
+$CODE   = "C:\alpaca-bot\ORG_BOT_UNIFIED\code"
+$RUNROOT= "C:\alpaca-bot\ORG_BOT_UNIFIED\runtime\paper"
+$LOGS   = "C:\alpaca-bot\ORG_BOT_UNIFIED\runtime\paper\logs"
+$PY     = "C:\alpaca-bot\ORG_BOT_UNIFIED\code\.venv\Scripts\python.exe"
+$GUARD_LOG = "C:\alpaca-bot\ORG_BOT_UNIFIED\runtime\paper\logs\process_guard.jsonl"
+$PIDFILE   = "C:\alpaca-bot\ORG_BOT_UNIFIED\runtime\paper\tbot_runtime.pid"
+
+function JLine([hashtable]$o){
+  ($o | ConvertTo-Json -Compress -Depth 12)
+}
+function LogGuard([string]$kind, [hashtable]$payload){
+  $o = @{
+    ts = (Get-Date).ToString("o")
+    kind = $kind
+    payload = $payload
+  }
+  Add-Content -LiteralPath $GUARD_LOG -Value (JLine $o) -Encoding UTF8
+}
+
+if(!(Test-Path $CODE)){ throw "CODE_ROOT_NOT_FOUND=$CODE" }
+if(!(Test-Path $RUNROOT)){ throw "RUNROOT_NOT_FOUND=$RUNROOT" }
+if(!(Test-Path $LOGS)){ New-Item -ItemType Directory -Force $LOGS | Out-Null }
+if(!(Test-Path $PY)){ throw "VENV_PY_NOT_FOUND=$PY" }
+
+# === Named Mutex (launcher-level single instance) ===
+$mutexName = "Global\ORG_BOT_UNIFIED_PAPER_GUARD_V21"
+$created = $false
+$mutex = New-Object System.Threading.Mutex($true, $mutexName, [ref]$created)
+
+if(-not $created){
+  LogGuard "lock_denied_mutex" @{ mutex=$mutexName }
+  Write-Host "GUARD_LOCK_DENIED (MUTEX) -> EXIT"
+  exit 0
+}
+
+try {
+  # === PIDFILE guard (runtime-level) ===
+  if(Test-Path $PIDFILE){
+    try {
+      $old = [int](Get-Content -LiteralPath $PIDFILE -ErrorAction Stop)
+      $proc = Get-Process -Id $old -ErrorAction SilentlyContinue
+      if($proc){
+        LogGuard "lock_denied_pidfile" @{ pidfile=$PIDFILE; oldPid=$old }
+        Write-Host "GUARD_LOCK_DENIED (PIDFILE) -> EXIT"
+        exit 0
+      }
+    } catch {
+      # ignore parse errors, will overwrite
+    }
+  }
+
+  $selfPid = [int]$PID
+  Set-Content -LiteralPath $PIDFILE -Value $selfPid -Encoding ASCII
+
+  # === Deterministic execution binding ===
+  Set-Location -LiteralPath $CODE
+  $env:PYTHONPATH = $CODE
+
+  LogGuard "run_start" @{ pwshPid=$selfPid; py=$PY; cwd=$CODE; cmd="$PY -m tbot.main --run" }
+
+  & $PY -m tbot.main --run
+
+  $exit = $LASTEXITCODE
+  LogGuard "run_end" @{ exitcode=$exit }
+  exit $exit
+}
+finally {
+  try { if(Test-Path $PIDFILE){ Remove-Item -LiteralPath $PIDFILE -Force } } catch {}
+  try { $mutex.ReleaseMutex() } catch {}
+  try { $mutex.Dispose() } catch {}
+}

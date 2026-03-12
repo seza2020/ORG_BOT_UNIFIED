@@ -1,0 +1,213 @@
+===== SNAPSHOT START =====
+TIME=02/23/2026 06:19:42
+HOST=ARMINPC
+USER=ARMINPC\armin
+PS=7.5.4
+PROJECT_ROOT=C:\alpaca-bot\org_bot
+PAPER_RUNROOT=C:\alpaca-bot\org_bot_runtime\paper
+SHADOW_RUNROOT=C:\alpaca-bot\org_bot_runtime\shadow
+SECRETS_ROOT=C:\alpaca-bot\org_bot_secrets
+
+
+===== KEY PATHS (profiles / secrets / wrappers / freeze / ops) =====
+PaperProfile=C:\alpaca-bot\org_bot\tools\profiles\paper.profile.json
+ShadowProfile=C:\alpaca-bot\org_bot\tools\profiles\shadow.profile.json
+PaperSecrets=C:\alpaca-bot\org_bot_secrets\paper.keys.dpapi.json
+ShadowSecrets=C:\alpaca-bot\org_bot_secrets\shadow.keys.dpapi.json
+Loader=C:\alpaca-bot\org_bot\tools\secrets\LOAD_PROFILE_SECRETS_V1.ps1
+
+FULLNAME	BYTES	LASTWRITE	ATTR
+C:\alpaca-bot\org_bot\tools\FREEZE_PAPER_PROFILE_V3.ps1	24730	2/22/2026 10:14:29 PM	Archive
+C:\alpaca-bot\org_bot\tools\FREEZE_SHADOW_PROFILE_V1.ps1	3879	2/22/2026 3:39:36 PM	Archive
+C:\alpaca-bot\org_bot\tools\RUN_SHADOW_PROFILE_CANON_V2.ps1	7254	2/22/2026 9:04:35 PM	Archive
+C:\alpaca-bot\org_bot\tools\RUN_LIVE_SHADOW_CANON_V2.ps1	6749	2/22/2026 6:15:04 PM	Archive
+C:\alpaca-bot\org_bot\tools\RUN_PAPER_SHADOW_CANON_V1.ps1	5261	2/22/2026 3:25:36 PM	Archive
+C:\alpaca-bot\org_bot\tools\ops\SECRET_LEAK_SCAN_RUNROOT_ZIP_V2.ps1	5528	2/22/2026 2:47:22 PM	Archive
+C:\alpaca-bot\org_bot\tools\ops\POSTFREEZE_SECRET_CERTIFY_V2.ps1	7723	2/22/2026 3:25:36 PM	Archive
+
+===== TOOLS\\OPS (postfreeze scripts found) =====
+
+
+===== SECRETS FINGERPRINTS (SAFE - no raw keys) =====
+LOADER_PAPER=OK=LOAD_PROFILE_SECRETS profile=PAPER base=https://paper-api.alpaca.markets kid=PKSK****3P64 runroot=C:\alpaca-bot\org_bot_runtime\paper
+LOADER_SHADOW=OK=LOAD_PROFILE_SECRETS profile=SHADOW base=https://paper-api.alpaca.markets kid=PKXT****KWJL runroot=C:\alpaca-bot\org_bot_runtime\shadow
+
+===== LOCK FILES =====
+PAPER_PID_EXISTS=0 path=C:\alpaca-bot\org_bot_runtime\paper\PID
+PAPER_KILL_SWITCH_EXISTS=0 path=C:\alpaca-bot\org_bot_runtime\paper\KILL_SWITCH
+SHADOW_PID_EXISTS=0 path=C:\alpaca-bot\org_bot_runtime\shadow\PID
+SHADOW_KILL_SWITCH_EXISTS=0 path=C:\alpaca-bot\org_bot_runtime\shadow\KILL_SWITCH
+
+===== SCHEDULED TASKS (TBOT*/ORG_BOT*) =====
+TASK=ORG_BOT_PAPER_EXECUTOR
+  state=Ready path=\
+  lastRun=02/22/2026 21:25:00 lastResult=267014 nextRun=02/23/2026 06:30:00
+  exec=C:\Program Files\PowerShell\7\pwsh.exe
+  args=-NoProfile -ExecutionPolicy Bypass -File "C:\alpaca-bot\org_bot\tools\paper\RUN_PAPER_EXECUTOR_TASK_V1.ps1" -ProjectRoot "C:\alpaca-bot\org_bot" -RunRoot "C:\alpaca-bot\org_bot_runtime\paper" -MaxOrdersPerDay 1 -MaxOrdersPerRun 1 -DefaultQty 1 -DryRun 1
+  triggers=2026-02-22T06:30:00-08:00
+TASK=ORG_BOT_PAPER_FREEZE
+  state=Ready path=\
+  lastRun=02/22/2026 22:05:49 lastResult=0 nextRun=02/23/2026 13:05:00
+  exec=C:\Program Files\PowerShell\7\pwsh.exe
+  args=-NoProfile -ExecutionPolicy Bypass -File "C:\alpaca-bot\org_bot\tools\FREEZE_PAPER_PROFILE_V3.ps1" -ProjectRoot "C:\alpaca-bot\org_bot" -RunRoot "C:\alpaca-bot\org_bot_runtime\paper" -TimeoutSec 180
+  triggers=2026-02-21T13:05:00-08:00
+TASK=ORG_BOT_PAPER_ORDER_POLL
+  state=Disabled path=\
+  lastRun=02/22/2026 21:42:00 lastResult=267014 nextRun=02/23/2026 06:20:00
+  exec=C:\Program Files\PowerShell\7\pwsh.exe
+  args=-NoProfile -ExecutionPolicy Bypass -File "C:\alpaca-bot\org_bot\tools\paper\RUN_PAPER_ORDER_POLL_TASK_V1.ps1" -ProjectRoot "C:\alpaca-bot\org_bot" -RunRoot "C:\alpaca-bot\org_bot_runtime\paper"
+  triggers=2026-02-21T00:00:00-08:00
+TASK=ORG_BOT_PAPER_POSTFREEZE_INVENTORY
+  state=Ready path=\
+  lastRun=11/30/1999 00:00:00 lastResult=267011 nextRun=02/23/2026 13:14:00
+  exec=C:\Program Files\PowerShell\7\pwsh.exe
+  args=-NoProfile -ExecutionPolicy Bypass -File "C:\alpaca-bot\org_bot\tools\ops\POSTFREEZE_INVENTORY_V1.ps1" -ProjectRoot "C:\alpaca-bot\org_bot" -RunRoot "C:\alpaca-bot\org_bot_runtime\paper"
+  triggers=2026-02-22T13:14:00-08:00
+TASK=ORG_BOT_PAPER_POSTFREEZE_LATENCY
+  state=Disabled path=\
+  lastRun=11/30/1999 00:00:00 lastResult=267011 nextRun=02/23/2026 13:12:00
+  exec=C:\Program Files\PowerShell\7\pwsh.exe
+  args=-NoProfile -ExecutionPolicy Bypass -File "C:\alpaca-bot\org_bot\tools\ops\POSTFREEZE_ENRICH_LATENCY_V1.ps1" -ProjectRoot "C:\alpaca-bot\org_bot" -RunRoot "C:\alpaca-bot\org_bot_runtime\paper"
+  triggers=2026-02-22T13:12:00-08:00
+TASK=ORG_BOT_PAPER_POSTFREEZE_SLOPACK
+  state=Ready path=\
+  lastRun=02/22/2026 13:13:00 lastResult=0 nextRun=02/23/2026 13:13:00
+  exec=C:\Program Files\PowerShell\7\pwsh.exe
+  args=-NoProfile -ExecutionPolicy Bypass -File "C:\alpaca-bot\org_bot\tools\ops\POSTFREEZE_ENRICH_SLOPACK_V1.ps1" -ProjectRoot "C:\alpaca-bot\org_bot" -RunRoot "C:\alpaca-bot\org_bot_runtime\paper"
+  triggers=2026-02-22T13:13:00-08:00
+TASK=ORG_BOT_PAPER_RUNNER
+  state=Ready path=\
+  lastRun=02/22/2026 06:25:01 lastResult=0 nextRun=02/23/2026 06:25:00
+  exec=C:\Program Files\PowerShell\7\pwsh.exe
+  args=-NoProfile -ExecutionPolicy Bypass -File "C:\alpaca-bot\org_bot\tools\RUN_PAPER_SHADOW_CANON_V1.ps1" -ProjectRoot "C:\alpaca-bot\org_bot" -ProfilePath "C:\alpaca-bot\org_bot\tools\profiles\paper.profile.json" -Force 1
+  triggers=2026-02-20T06:25:00-08:00 | MSFT_TaskLogonTrigger
+TASK=ORG_BOT_PAPER_SECRET_CERTIFY
+  state=Ready path=\
+  lastRun=11/30/1999 00:00:00 lastResult=267011 nextRun=02/23/2026 13:20:00
+  exec=C:\Program Files\PowerShell\7\pwsh.exe
+  args=-NoProfile -ExecutionPolicy Bypass -File "C:\alpaca-bot\org_bot\tools\ops\POSTFREEZE_SECRET_CERTIFY_V2.ps1" -Profile PAPER -ProjectRoot "C:\alpaca-bot\org_bot" -RunRoot "C:\alpaca-bot\org_bot_runtime\paper" -KillOnFail 1
+  triggers=2026-02-22T13:20:00-08:00
+TASK=ORG_BOT_PAPER_SECRET_SCAN
+  state=Ready path=\
+  lastRun=11/30/1999 00:00:00 lastResult=267011 nextRun=02/23/2026 13:16:00
+  exec=C:\Program Files\PowerShell\7\pwsh.exe
+  args=-NoProfile -ExecutionPolicy Bypass -File "C:\alpaca-bot\org_bot\tools\ops\SECRET_LEAK_SCAN_RUNROOT_ZIP_V2.ps1" -Profile PAPER -ProjectRoot "C:\alpaca-bot\org_bot" -RunRoot "C:\alpaca-bot\org_bot_runtime\paper" -KillOnFail 1
+  triggers=2026-02-22T13:16:00-08:00
+TASK=ORG_BOT_PAPER_WATCHDOG
+  state=Ready path=\
+  lastRun=02/23/2026 06:19:01 lastResult=0 nextRun=02/23/2026 06:20:00
+  exec=C:\Program Files\PowerShell\7\pwsh.exe
+  args=-NoProfile -ExecutionPolicy Bypass -File "C:\alpaca-bot\org_bot\tools\ops\WATCHDOG_EXIT0_WRAPPER_V1.ps1" -ProjectRoot "C:\alpaca-bot\org_bot" -RunRoot "C:\alpaca-bot\org_bot_runtime\paper" -InnerScript "C:\alpaca-bot\org_bot\tools\WATCHDOG_PAPER_PROFILE_V1.ps1"
+  triggers=2026-02-20T00:00:00-08:00
+TASK=ORG_BOT_PAPER_WEEKLY_REVIEW
+  state=Ready path=\
+  lastRun=02/22/2026 14:00:00 lastResult=0 nextRun=03/01/2026 14:00:00
+  exec=C:\Program Files\PowerShell\7\pwsh.exe
+  args=-NoProfile -ExecutionPolicy Bypass -File "C:\alpaca-bot\org_bot\tools\analytics\RUN_WEEKLY_REVIEW_PAPER_V1.ps1" -ProjectRoot "C:\alpaca-bot\org_bot" -RunRoot "C:\alpaca-bot\org_bot_runtime\paper"
+  triggers=2026-02-21T14:00:00-08:00
+TASK=ORG_BOT_SHADOW_FREEZE
+  state=Ready path=\
+  lastRun=02/22/2026 22:05:49 lastResult=0 nextRun=02/23/2026 13:06:00
+  exec=C:\Program Files\PowerShell\7\pwsh.exe
+  args=-NoProfile -ExecutionPolicy Bypass -File "C:\alpaca-bot\org_bot\tools\FREEZE_SHADOW_PROFILE_V1.ps1" -ProjectRoot "C:\alpaca-bot\org_bot" -RunRoot "C:\alpaca-bot\org_bot_runtime\shadow"
+  triggers=2026-02-22T13:06:00-08:00
+TASK=ORG_BOT_SHADOW_SECRET_CERTIFY
+  state=Ready path=\
+  lastRun=11/30/1999 00:00:00 lastResult=267011 nextRun=02/23/2026 13:21:00
+  exec=C:\Program Files\PowerShell\7\pwsh.exe
+  args=-NoProfile -ExecutionPolicy Bypass -File "C:\alpaca-bot\org_bot\tools\ops\POSTFREEZE_SECRET_CERTIFY_V2.ps1" -Profile SHADOW -ProjectRoot "C:\alpaca-bot\org_bot" -RunRoot "C:\alpaca-bot\org_bot_runtime\shadow" -KillOnFail 1
+  triggers=2026-02-22T13:21:00-08:00
+TASK=ORG_BOT_SHADOW_SECRET_SCAN
+  state=Ready path=\
+  lastRun=11/30/1999 00:00:00 lastResult=267011 nextRun=02/23/2026 13:17:00
+  exec=C:\Program Files\PowerShell\7\pwsh.exe
+  args=-NoProfile -ExecutionPolicy Bypass -File "C:\alpaca-bot\org_bot\tools\ops\SECRET_LEAK_SCAN_RUNROOT_ZIP_V2.ps1" -Profile SHADOW -ProjectRoot "C:\alpaca-bot\org_bot" -RunRoot "C:\alpaca-bot\org_bot_runtime\shadow" -KillOnFail 1
+  triggers=2026-02-22T13:17:00-08:00
+TASK=TBOT_END_OF_DAY_1305
+  state=Ready path=\
+  lastRun=02/20/2026 13:05:00 lastResult=0 nextRun=02/23/2026 13:05:00
+  exec=C:\Program Files\PowerShell\7\pwsh.exe
+  args=-NoProfile -ExecutionPolicy Bypass -Command "& "C:\alpaca-bot\org_bot\tools\OPS_END_OF_DAY_V2.ps1" -Root "C:\alpaca-bot\org_bot" -Day (Get-Date -Format yyyyMMdd) -StopBot 1"
+  triggers=2026-02-15T13:05:00-08:00
+TASK=TBOT_POSTFIX_DAILY_EVIDENCE_1306
+  state=Ready path=\
+  lastRun=02/20/2026 13:06:00 lastResult=0 nextRun=02/23/2026 13:06:00
+  exec=C:\Program Files\PowerShell\7\pwsh.exe
+  args=-NoProfile -ExecutionPolicy Bypass -File "C:\alpaca-bot\org_bot\tools\ops\POSTFIX_DAILY_EVIDENCE.ps1" -Root "C:\alpaca-bot\org_bot"
+  triggers=2026-02-16T13:06:00
+TASK=TBOT_PRE_CLOSE_STOP_125830
+  state=Ready path=\
+  lastRun=02/20/2026 12:58:30 lastResult=0 nextRun=02/23/2026 12:58:30
+  exec=C:\Program Files\PowerShell\7\pwsh.exe
+  args=-NoProfile -ExecutionPolicy Bypass -Command "$d = Get-Date -Format yyyyMMdd; $ops = 'C:\alpaca-bot\org_bot\logs\ops'; New-Item -ItemType Directory -Force -Path $ops | Out-Null; $log = Join-Path $ops ("PRE_CLOSE_STOP_{0}.log" -f $d); & 'C:\alpaca-bot\org_bot\tools\TBOT_PRE_CLOSE_STOP_SAFE.ps1' -Root 'C:\alpaca-bot\org_bot' *>> $log"
+  triggers=2026-02-16T12:58:30
+TASK=TBOT_RUN_SHADOW_DAILY_0630
+  state=Ready path=\
+  lastRun=02/22/2026 17:55:28 lastResult=0 nextRun=02/23/2026 06:30:00
+  exec=C:\Program Files\PowerShell\7\pwsh.exe
+  args=-NoProfile -ExecutionPolicy Bypass -File "C:\alpaca-bot\org_bot\tools\RUN_SHADOW_PROFILE_CANON_V2.ps1" -ProjectRoot "C:\alpaca-bot\org_bot" -RunRoot "C:\alpaca-bot\org_bot_runtime\shadow" -ProfilePath "C:\alpaca-bot\org_bot\tools\profiles\shadow.profile.json" -InnerScriptPath "C:\alpaca-bot\org_bot\tools\RUN_LIVE_SHADOW_CANON_V2.ps1"
+  triggers=2026-02-15T06:30:00-08:00
+TASK=TBOT_SHADOW_THROTTLE_1MIN_USER
+  state=Disabled path=\
+  lastRun=02/20/2026 13:57:01 lastResult=0 nextRun=02/23/2026 06:20:00
+  exec="C:\Program Files\PowerShell\7\pwsh.exe"
+  args=-NoProfile -ExecutionPolicy Bypass -File "C:\alpaca-bot\org_bot\tools\ops\SHADOW_DAILY_THROTTLE_WATCHDOG.ps1" -Root "C:\alpaca-bot\org_bot" -TargetTimePt "13:00" -TargetUsed 60 -EnforceStop 0
+  triggers=2026-02-20T11:28:00
+
+===== LATEST FREEZE (PAPER) =====
+FREEZE_OUT_LATEST=C:\alpaca-bot\org_bot_runtime\paper\logs\ops\FREEZE_OUT_20260222_220549.txt
+
+FREEZE_ERR_LATEST=C:\alpaca-bot\org_bot_runtime\paper\logs\ops\FREEZE_ERR_20260222_220549.txt
+
+RUNROOT_BACKUP_DIR=C:\alpaca-bot\org_bot_runtime\paper\logs\ops\FREEZE_BACKUP_20260222_20260222_220549
+YMD=20260222
+BK_FILES_TOP:
+
+ZIP_SELECTED=C:\alpaca-bot\org_bot_runtime\paper\logs\ops\FREEZE_BACKUP_20260222_20260222_220549\FREEZE_TODAY_20260222_20260222_220558_RUNROOT.zip
+ZIP_HAS_INVENTORY=0
+ZIP_HAS_LATENCY_SLO=0
+ZIP_HAS_ORDER_POLL_LAG_SLO=0
+ZIP_HAS_D2O_SLO=0
+ZIP_HAS_SECRET_CERT=0
+
+===== LATEST FREEZE (SHADOW) =====
+FREEZE_OUT_LATEST=C:\alpaca-bot\org_bot_runtime\shadow\logs\ops\FREEZE_OUT_20260223_055429.txt
+
+FREEZE_ERR_LATEST=C:\alpaca-bot\org_bot_runtime\shadow\logs\ops\FREEZE_ERR_20260223_055429.txt
+
+RUNROOT_BACKUP_DIR=C:\alpaca-bot\org_bot_runtime\shadow\logs\ops\FREEZE_BACKUP_20260223_20260223_055429
+YMD=20260223
+BK_FILES_TOP:
+
+ZIP_SELECTED=C:\alpaca-bot\org_bot_runtime\shadow\logs\ops\FREEZE_BACKUP_20260223_20260223_055429\FREEZE_TODAY_20260223_20260223_055429_RUNROOT.zip
+ZIP_HAS_INVENTORY=0
+ZIP_HAS_LATENCY_SLO=0
+ZIP_HAS_ORDER_POLL_LAG_SLO=0
+ZIP_HAS_D2O_SLO=0
+ZIP_HAS_SECRET_CERT=0
+
+===== LIVE LOGS (PAPER) =====
+LIVE_OUT_LATEST=C:\alpaca-bot\org_bot_runtime\paper\logs\ops\LIVE_OUT_20260223_LATEST.txt
+NO_LIVE_OUT_LATEST=1
+LIVE_ERR_LATEST=C:\alpaca-bot\org_bot_runtime\paper\logs\ops\LIVE_ERR_20260223_LATEST.txt
+NO_LIVE_ERR_LATEST=1
+
+===== LIVE LOGS (SHADOW) =====
+LIVE_OUT_LATEST=C:\alpaca-bot\org_bot_runtime\shadow\logs\ops\LIVE_OUT_20260223_LATEST.txt
+NO_LIVE_OUT_LATEST=1
+LIVE_ERR_LATEST=C:\alpaca-bot\org_bot_runtime\shadow\logs\ops\LIVE_ERR_20260223_LATEST.txt
+NO_LIVE_ERR_LATEST=1
+
+===== PROJECT TREE (top level) =====
+
+
+===== RUNROOT TREES (depth=2) =====
+--- PAPER ---
+
+
+--- SHADOW ---
+
+
+
+===== SNAPSHOT END =====
+OK=SNAPSHOT_DONE

@@ -1,0 +1,150 @@
+param(
+  [string]$Root = "C:\alpaca-bot\ORG_BOT_UNIFIED\code"
+)
+
+$ErrorActionPreference = "SilentlyContinue"
+
+function Get-LatestFile([string]$glob) {
+  Get-ChildItem $glob | Sort-Object LastWriteTime -Desc | Select-Object -First 1
+}
+function Parse-Int([string]$s) { try { [int]$s } catch { $null } }
+
+$LogsDir = Join-Path $Root "logs"
+$OpsDir  = Join-Path $LogsDir "ops"
+
+$live = Get-LatestFile (Join-Path $OpsDir "LIVE_OUT_*.txt")
+if (-not $live) { return }
+
+# --- Gate config from boot line (source of truth)
+$cap  = $null
+$cool = $null
+$boot = Select-String -Path $live.FullName -Pattern "\|\s+boot\s+\{" | Select-Object -First 1
+if ($boot) {
+  if ($boot.Line -match "max_plans_per_day'\s*:\s*([0-9]+)") { $cap  = Parse-Int $Matches[1] }
+  if ($boot.Line -match "cooldown_sec'\s*:\s*([0-9]+)")      { $cool = Parse-Int $Matches[1] }
+
+  if (-not $cap  -and $boot.Line -match '"max_plans_per_day"\s*:\s*([0-9]+)') { $cap  = Parse-Int $Matches[1] }
+  if (-not $cool -and $boot.Line -match '"cooldown_sec"\s*:\s*([0-9]+)')      { $cool = Parse-Int $Matches[1] }
+}
+
+# --- plans_used from alpha_admission (best), fallback count shadow_accept
+$accepts = $null
+$aa = Select-String -Path $live.FullName -Pattern "\|\s+alpha_admission\s+\{.*accepts" | Select-Object -Last 1
+if ($aa) {
+  if ($aa.Line -match "accepts'\s*:\s*([0-9]+)")      { $accepts = Parse-Int $Matches[1] }
+  elseif ($aa.Line -match '"accepts"\s*:\s*([0-9]+)') { $accepts = Parse-Int $Matches[1] }
+}
+if ($accepts -eq $null) {
+  $accepts = (Select-String -Path $live.FullName -Pattern "\|\s+shadow_accept\s+" | Measure-Object).Count
+}
+
+# --- cap reached?
+$capHit = $false
+$capLine = Select-String -Path $live.FullName -Pattern "daily_plan_cap_reached" | Select-Object -Last 1
+if ($capLine) { $capHit = $true }
+if ($cap -ne $null -and $accepts -ne $null -and $accepts -ge $cap) { $capHit = $true }
+
+$plansLeft = $null
+if ($cap -ne $null -and $accepts -ne $null) { $plansLeft = [Math]::Max(0, $cap - $accepts) }
+
+# --- last accept ts from shadow_plans.jsonl (accepted-only stream)
+$shadowPlans = Join-Path $LogsDir "shadow_plans.jsonl"
+$lastAcceptTs = $null
+if (Test-Path $shadowPlans) {
+  try {
+    $tail = Get-Content -Tail 1 $shadowPlans
+    if ($tail) {
+      $o = $tail | ConvertFrom-Json
+      if ($o -and $o.ts) { $lastAcceptTs = [string]$o.ts }
+    }
+  } catch { $lastAcceptTs = $null }
+}
+
+# --- cooldown_left (UTC-safe). If cap reached => null to avoid confusion.
+$cooldownLeftSec = $null
+$tz = [System.TimeZoneInfo]::FindSystemTimeZoneById("Pacific Standard Time")
+$nowUtc = [datetime]::UtcNow
+$nowPt  = [System.TimeZoneInfo]::ConvertTimeFromUtc($nowUtc, $tz)
+
+if (-not $capHit -and $cool -ne $null -and $lastAcceptTs) {
+  try {
+    $lastStr = [string]$lastAcceptTs
+
+    # If ISO no zone => treat as UTC (your shadow_plans.ts behaves like UTC)
+    if ($lastStr -match '^\d{4}-\d{2}-\d{2}T' -and $lastStr -notmatch 'Z$' -and $lastStr -notmatch '[\+\-]\d{2}:\d{2}$') {
+      $u = [datetime]::SpecifyKind([datetime]::Parse($lastStr), [System.DateTimeKind]::Utc)
+      $lastPt = [System.TimeZoneInfo]::ConvertTimeFromUtc($u, $tz)
+    } else {
+      # has Z/offset or is non-ISO => parse normally then map to PT if offset exists
+      $dto = [datetimeoffset]::Parse($lastStr)
+      $lastPt = [System.TimeZoneInfo]::ConvertTimeFromUtc($dto.UtcDateTime, $tz)
+    }
+
+    $nextOk = $lastPt.AddSeconds([int]$cool)
+    $delta = ($nextOk - $nowPt).TotalSeconds
+    $cooldownLeftSec = [int][Math]::Max(0, [Math]::Ceiling($delta))
+  } catch { $cooldownLeftSec = $null }
+}
+
+# --- last candidate ts from shadow_candidates.jsonl (accept+reject stream)
+$shadowCand = Join-Path $LogsDir "shadow_candidates.jsonl"
+$lastCandTs = $null
+if (Test-Path $shadowCand) {
+  try {
+    $tail2 = Get-Content -Tail 1 $shadowCand
+    if ($tail2) {
+      $o2 = $tail2 | ConvertFrom-Json
+      if ($o2 -and $o2.ts) { $lastCandTs = [string]$o2.ts }
+    }
+  } catch { $lastCandTs = $null }
+}
+
+# --- next reset = midnight PT
+$nextResetPt = (Get-Date -Date $nowPt.Date).AddDays(1)
+$day = $nowPt.ToString("yyyyMMdd")
+
+# --- status JSON
+$statusPath = Join-Path $OpsDir ("shadow_gate_status_{0}.json" -f $day)
+
+$blockedReason = $null
+if ($capHit) { $blockedReason = "CAP_REACHED" }
+elseif ($cooldownLeftSec -ne $null -and $cooldownLeftSec -gt 0) { $blockedReason = "COOLDOWN" }
+
+$obj = [ordered]@{
+  ts_utc = $nowUtc.ToString("o")
+  ts_pt  = $nowPt.ToString("o")
+  live_out = $live.FullName
+  live_out_lastwrite = $live.LastWriteTime.ToString("o")
+  gate = [ordered]@{
+    max_plans_per_day = $cap
+    cooldown_sec = $cool
+    cooldown_left_sec = $cooldownLeftSec
+    plans_used = $accepts
+    plans_left = $plansLeft
+    cap_reached = $capHit
+    blocked_reason = $blockedReason
+    next_reset_pt = $nextResetPt.ToString("o")
+  }
+  shadow = [ordered]@{
+    shadow_plans_path = $shadowPlans
+    last_accept_ts = $lastAcceptTs
+    shadow_candidates_path = $shadowCand
+    last_candidate_ts = $lastCandTs
+  }
+}
+
+($obj | ConvertTo-Json -Depth 6) | Set-Content -Encoding UTF8 $statusPath
+
+# --- One-shot cap reached alert (file + ops events log). (EventLog optional; can be added later safely)
+if ($capHit) {
+  $alert = Join-Path $OpsDir ("GATE_CAP_REACHED_{0}.log" -f $day)
+  if (-not (Test-Path $alert)) {
+    $msg = "GATE_CAP_REACHED ts_pt=$($nowPt.ToString('o')) plans_used=$accepts cap=$cap plans_left=$plansLeft next_reset_pt=$($nextResetPt.ToString('o')) live_out=$($live.Name)"
+    $msg | Set-Content -Encoding UTF8 $alert
+
+    $opsInfo = Join-Path $OpsDir ("GATE_EVENTS_{0}.log" -f $day)
+    ("INFO  | {0} | GATE_CAP_REACHED accepted={1} plans_left={2} next_reset_pt={3}" -f $nowPt.ToString("yyyy-MM-ddTHH:mm:ss"), $accepts, $plansLeft, $nextResetPt.ToString("o")) |
+      Add-Content -Encoding UTF8 $opsInfo
+  }
+}
+

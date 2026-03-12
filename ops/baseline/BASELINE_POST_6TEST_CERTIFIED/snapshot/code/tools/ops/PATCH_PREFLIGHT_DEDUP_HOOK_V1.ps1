@@ -1,0 +1,92 @@
+param(
+  [string]$Root="C:\alpaca-bot\org_bot",
+  [string]$RunRoot="C:\alpaca-bot\org_bot_runtime\paper"
+)
+$ErrorActionPreference="Stop"
+
+$PRE  = Join-Path $Root "tools\ops\PAPER_PREFLIGHT_CANON_V1.ps1"
+$HOOK = Join-Path $Root "tools\ops\PAPER_PREFLIGHT_POST_OK_HOOK_V1.ps1"
+if(!(Test-Path $PRE)){ throw "MISSING: $PRE" }
+if(!(Test-Path $HOOK)){ throw "MISSING: $HOOK" }
+
+$ts = Get-Date -Format "yyyyMMdd_HHmmss"
+$bakDir = Join-Path $Root ("logs\ops\patches\PREFLIGHT_DEDUP_HOOK_" + $ts)
+New-Item -ItemType Directory -Force -Path $bakDir | Out-Null
+Copy-Item -Force -LiteralPath $PRE -Destination (Join-Path $bakDir "PAPER_PREFLIGHT_CANON_V1.ps1.BEFORE")
+
+$lines = Get-Content -LiteralPath $PRE -Encoding UTF8
+
+$out = New-Object "System.Collections.Generic.List[string]"
+$inHook = $false
+$hookRemoved = 0
+
+foreach($ln in $lines){
+
+  # detect hook start
+  if($ln -match '^\s*#\s*---\s*PRE_OK_MARKER_HOOK'){
+    $inHook = $true
+    $hookRemoved++
+    continue
+  }
+
+  if($inHook){
+    # detect hook end line
+    if($ln -match '^\s*#\s*---\s*end\s+hook\s*---\s*$'){
+      $inHook = $false
+    }
+    continue
+  }
+
+  # also remove any raw pwsh call that references the hook path (defensive)
+  if($ln -match 'PAPER_PREFLIGHT_POST_OK_HOOK_V1\.ps1'){
+    continue
+  }
+  if($ln -match 'PREFLIGHT_POST_OK_HOOK_FAIL'){
+    continue
+  }
+
+  # remove trailing exit 0 / exit $LASTEXITCODE to avoid premature exit before standardized tail
+  if($ln -match '^\s*exit\s+0\s*$'){ continue }
+  if($ln -match '^\s*exit\s+\$LASTEXITCODE\s*$'){ continue }
+
+  $out.Add([string]$ln)
+}
+
+# trim trailing blanks
+while($out.Count -gt 0 -and $out[$out.Count-1] -match '^\s*$'){ $out.RemoveAt($out.Count-1) }
+
+# append exactly one hook block
+[string[]]$hookBlock = @(
+"",
+"# --- PRE_OK_MARKER_HOOK (ops) ---",
+"pwsh -NoProfile -ExecutionPolicy Bypass -File `"$HOOK`" -RunRoot `"$RunRoot`" -ProjectRoot `"$Root`"",
+"if(`$LASTEXITCODE -ne 0){ throw `"NO_GO: PREFLIGHT_POST_OK_HOOK_FAIL`" }",
+"# --- end hook ---",
+"exit 0",
+""
+)
+foreach($h in $hookBlock){ $out.Add($h) }
+
+Set-Content -LiteralPath $PRE -Encoding UTF8 -Value $out
+
+# Parse check
+$null=[System.Management.Automation.Language.Parser]::ParseFile($PRE,[ref]$null,[ref]$null)
+Write-Host "[OK] PS_PARSE_OK: PRE"
+Write-Host ("[OK] BKP_DIR=" + $bakDir)
+Write-Host ("[OK] HOOK_BLOCKS_REMOVED=" + $hookRemoved)
+
+# Smoke: run preflight, verify marker exists
+$opsDir = Join-Path (Join-Path $RunRoot "logs") "ops"
+New-Item -ItemType Directory -Force -Path $opsDir | Out-Null
+$MARK = Join-Path $opsDir "PREFLIGHT_OK.marker"
+if(Test-Path $MARK){ Remove-Item -Force -LiteralPath $MARK -ErrorAction SilentlyContinue }
+
+& "C:\Program Files\PowerShell\7\pwsh.exe" -NoProfile -ExecutionPolicy Bypass -File $PRE -Root $Root -RunRoot $RunRoot
+Write-Host ("PREFLIGHT_EXIT=" + $LASTEXITCODE)
+if($LASTEXITCODE -ne 0){ throw "NO_GO: PREFLIGHT_EXIT=$LASTEXITCODE" }
+
+Write-Host ("MARK_EXISTS=" + (Test-Path $MARK))
+if(!(Test-Path $MARK)){ throw "NO_GO: MARKER_NOT_CREATED_AFTER_DEDUP" }
+
+Write-Host "[GO] DEDUP_OK (single hook, marker written)"
+exit 0

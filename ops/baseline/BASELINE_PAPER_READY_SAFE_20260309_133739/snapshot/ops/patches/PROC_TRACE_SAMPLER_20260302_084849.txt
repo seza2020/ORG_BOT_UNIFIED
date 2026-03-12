@@ -1,0 +1,277 @@
+START 2026-03-02T08:48:49.3718471-08:00
+---- SNAP 2026-03-02T08:48:51.5112736-08:00 ----
+
+ProcessId       : 24788
+ParentProcessId : 19396
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+ProcessId       : 15232
+ParentProcessId : 24788
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+
+---- SNAP 2026-03-02T08:48:53.5904400-08:00 ----
+
+ProcessId       : 24788
+ParentProcessId : 19396
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+ProcessId       : 15232
+ParentProcessId : 24788
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+
+---- SNAP 2026-03-02T08:48:55.6525600-08:00 ----
+
+ProcessId       : 24788
+ParentProcessId : 19396
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+ProcessId       : 15232
+ParentProcessId : 24788
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+
+---- SNAP 2026-03-02T08:48:57.7287365-08:00 ----
+
+ProcessId       : 24788
+ParentProcessId : 19396
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+ProcessId       : 15232
+ParentProcessId : 24788
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+
+---- SNAP 2026-03-02T08:48:59.8046973-08:00 ----
+
+ProcessId       : 24788
+ParentProcessId : 19396
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+ProcessId       : 15232
+ParentProcessId : 24788
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+
+---- SNAP 2026-03-02T08:49:01.8839517-08:00 ----
+
+ProcessId       : 24788
+ParentProcessId : 19396
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+ProcessId       : 15232
+ParentProcessId : 24788
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+
+---- SNAP 2026-03-02T08:49:03.9575050-08:00 ----
+
+ProcessId       : 24788
+ParentProcessId : 19396
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+ProcessId       : 15232
+ParentProcessId : 24788
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+
+---- SNAP 2026-03-02T08:49:06.0455374-08:00 ----
+
+ProcessId       : 24788
+ParentProcessId : 19396
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+ProcessId       : 15232
+ParentProcessId : 24788
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+
+---- SNAP 2026-03-02T08:49:08.1234781-08:00 ----
+
+ProcessId       : 24788
+ParentProcessId : 19396
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+ProcessId       : 15232
+ParentProcessId : 24788
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+
+---- SNAP 2026-03-02T08:49:10.1676154-08:00 ----
+
+ProcessId       : 24788
+ParentProcessId : 19396
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+ProcessId       : 15232
+ParentProcessId : 24788
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+
+---- SNAP 2026-03-02T08:49:12.2433510-08:00 ----
+
+ProcessId       : 24788
+ParentProcessId : 19396
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+ProcessId       : 15232
+ParentProcessId : 24788
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+
+---- SNAP 2026-03-02T08:49:14.3204494-08:00 ----
+
+ProcessId       : 24788
+ParentProcessId : 19396
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+ProcessId       : 15232
+ParentProcessId : 24788
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+
+---- SNAP 2026-03-02T08:49:16.3996396-08:00 ----
+
+ProcessId       : 24788
+ParentProcessId : 19396
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+ProcessId       : 15232
+ParentProcessId : 24788
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+
+---- SNAP 2026-03-02T08:49:18.4608367-08:00 ----
+
+ProcessId       : 24788
+ParentProcessId : 19396
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+ProcessId       : 15232
+ParentProcessId : 24788
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+
+---- SNAP 2026-03-02T08:49:20.5492853-08:00 ----
+
+ProcessId       : 24788
+ParentProcessId : 19396
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+ProcessId       : 15232
+ParentProcessId : 24788
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+
+---- SNAP 2026-03-02T08:49:22.6251706-08:00 ----
+
+ProcessId       : 24788
+ParentProcessId : 19396
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+ProcessId       : 15232
+ParentProcessId : 24788
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+
+---- SNAP 2026-03-02T08:49:24.7044793-08:00 ----
+
+ProcessId       : 24788
+ParentProcessId : 19396
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+ProcessId       : 15232
+ParentProcessId : 24788
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+
+---- SNAP 2026-03-02T08:49:26.7791957-08:00 ----
+
+ProcessId       : 24788
+ParentProcessId : 19396
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+ProcessId       : 15232
+ParentProcessId : 24788
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+
+---- SNAP 2026-03-02T08:49:28.8535922-08:00 ----
+
+ProcessId       : 24788
+ParentProcessId : 19396
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+ProcessId       : 15232
+ParentProcessId : 24788
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+
+---- SNAP 2026-03-02T08:49:30.9059500-08:00 ----
+
+ProcessId       : 24788
+ParentProcessId : 19396
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+ProcessId       : 15232
+ParentProcessId : 24788
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+
+---- SNAP 2026-03-02T08:49:32.9773060-08:00 ----
+
+ProcessId       : 24788
+ParentProcessId : 19396
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+ProcessId       : 15232
+ParentProcessId : 24788
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+
+---- SNAP 2026-03-02T08:49:35.0467087-08:00 ----
+
+ProcessId       : 24788
+ParentProcessId : 19396
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+ProcessId       : 15232
+ParentProcessId : 24788
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+
+---- SNAP 2026-03-02T08:49:37.1374211-08:00 ----
+
+ProcessId       : 24788
+ParentProcessId : 19396
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+ProcessId       : 15232
+ParentProcessId : 24788
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+
+---- SNAP 2026-03-02T08:49:39.2160171-08:00 ----
+
+ProcessId       : 24788
+ParentProcessId : 19396
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+ProcessId       : 15232
+ParentProcessId : 24788
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+
+---- SNAP 2026-03-02T08:49:41.2905873-08:00 ----
+
+ProcessId       : 24788
+ParentProcessId : 19396
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+ProcessId       : 15232
+ParentProcessId : 24788
+CommandLine     : "C:\alpaca-bot\ORG_BOT_UNIFIED\.venv\Scripts\python.exe" -u -m tbot.main --run --iters 999999999 --sleep 0.1 --gate_cooldown_sec 300 --gate_max_plans_per_day 15 --gate_min_rr 1.5 --gate_min_conf 0.55 --gate_max_risk_usd 500
+
+
+END 2026-03-02T08:49:41.5396305-08:00

@@ -1,0 +1,40 @@
+$ErrorActionPreference = "Stop"
+Set-StrictMode -Version Latest
+
+$U       = "C:\alpaca-bot\ORG_BOT_UNIFIED"
+$CODE    = Join-Path $U "code"
+$RUNTIME = Join-Path $U "runtime\paper"
+$LOGS    = Join-Path $RUNTIME "logs"
+$PYTHON  = Join-Path $CODE ".venv\Scripts\python.exe"
+
+if (!(Test-Path -LiteralPath $CODE))    { throw "CODE_ROOT_NOT_FOUND=$CODE" }
+if (!(Test-Path -LiteralPath $RUNTIME)) { throw "RUNTIME_ROOT_NOT_FOUND=$RUNTIME" }
+if (!(Test-Path -LiteralPath $LOGS))    { New-Item -ItemType Directory -Force -Path $LOGS | Out-Null }
+if (!(Test-Path -LiteralPath $PYTHON))  { throw "CANONICAL_PYTHON_NOT_FOUND=$PYTHON" }
+
+$runnerLog = Join-Path $LOGS "canonical_task_context_runner_v1.log"
+
+function Write-RunnerLog {
+  param([string]$msg)
+  try {
+    ("{0} {1}" -f (Get-Date).ToString("o"), $msg) | Add-Content -LiteralPath $runnerLog -Encoding UTF8
+  } catch {}
+}
+
+Write-RunnerLog "RUNNER_START"
+
+Set-Location $CODE
+$env:PYTHONPATH   = $CODE
+$env:TBOT_RUNROOT = $RUNTIME
+
+Write-RunnerLog ("SET_CONTEXT CODE=" + $CODE)
+Write-RunnerLog ("SET_CONTEXT RUNROOT=" + $RUNTIME)
+Write-RunnerLog ("SET_CONTEXT PYTHON=" + $PYTHON)
+Write-RunnerLog ("SET_CONTEXT USER=" + $env:USERNAME)
+Write-RunnerLog ("SET_CONTEXT COMPUTER=" + $env:COMPUTERNAME)
+
+& $PYTHON -m tbot.main --run
+
+$exitCode = $LASTEXITCODE
+Write-RunnerLog ("RUNNER_EXIT_CODE=" + $exitCode)
+exit $exitCode

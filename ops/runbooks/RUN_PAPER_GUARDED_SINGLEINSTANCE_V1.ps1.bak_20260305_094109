@@ -1,0 +1,47 @@
+param()
+
+$mutexName = "Global\ORG_BOT_UNIFIED_PAPER_GUARD_V2"
+$created = $false
+$mutex = New-Object System.Threading.Mutex($true,$mutexName,[ref]$created)
+
+$runtime="C:\alpaca-bot\ORG_BOT_UNIFIED\runtime\paper"
+$pidfile="$runtime\tbot_runtime.pid"
+$log="$runtime\logs\process_guard.jsonl"
+
+function log($msg){
+ $o=[pscustomobject]@{
+  ts=(Get-Date).ToString("o")
+  msg=$msg
+ }
+ $o | ConvertTo-Json -Compress | Add-Content $log
+}
+
+if(!$created){
+ log "mutex_locked_exit"
+ exit
+}
+
+if(Test-Path $pidfile){
+ try{
+  $pid=[int](Get-Content $pidfile)
+  $p=Get-Process -Id $pid -ErrorAction SilentlyContinue
+  if($p){
+    log "pidfile_running_exit"
+    exit
+  }
+ }catch{}
+}
+
+$pid=$PID
+$pid | Out-File $pidfile -Force
+
+log "launching_runtime"
+
+try{
+ python -m tbot.main
+}
+finally{
+ if(Test-Path $pidfile){ Remove-Item $pidfile -Force }
+ $mutex.ReleaseMutex()
+ log "runtime_exit"
+}

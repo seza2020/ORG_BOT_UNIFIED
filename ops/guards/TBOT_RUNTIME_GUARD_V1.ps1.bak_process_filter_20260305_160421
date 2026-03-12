@@ -1,0 +1,65 @@
+param(
+  [Parameter(Mandatory=$false)]
+  [ValidateSet("PAPER","SHADOW","paper","shadow")]
+  [string]$Profile = "PAPER",
+
+  [Parameter(Mandatory=$false)]
+  [Alias("U","Unified")]
+  [string]$UnifiedRoot = "C:\alpaca-bot\ORG_BOT_UNIFIED",
+
+  [Parameter(Mandatory=$false)]
+  [Alias("R")]
+  [string]$Root = "",
+
+  [Parameter(Mandatory=$false)]
+  [string]$RunRoot = "",
+
+  # Back-compat: some wrappers pass -PyExe
+  [Parameter(Mandatory=$false)]
+  [Alias("Py","Python","PythonExe")]
+  [string]$PyExe = ""
+)
+
+$ErrorActionPreference="Stop"
+
+# Root alias precedence
+if(-not [string]::IsNullOrWhiteSpace($Root)){
+  $UnifiedRoot = $Root
+}
+
+# Normalize profile
+$p = $Profile.ToUpperInvariant()
+
+if([string]::IsNullOrWhiteSpace($RunRoot)){
+  if($p -eq "SHADOW"){
+    $RunRoot = Join-Path $UnifiedRoot "runtime\shadow"
+  } else {
+    $RunRoot = Join-Path $UnifiedRoot "runtime\paper"
+  }
+}
+
+# Ensure logs dir exists
+$LogDir = Join-Path $RunRoot "logs"
+if(!(Test-Path $LogDir)){
+  New-Item -ItemType Directory -Force $LogDir | Out-Null
+}
+
+# Validate PyExe (non-blocking for now)
+$pyOk = $null
+if(-not [string]::IsNullOrWhiteSpace($PyExe)){
+  $pyOk = (Test-Path -LiteralPath $PyExe)
+}
+
+$LogFile = Join-Path $LogDir "ops_guard.log"
+$line = "$(Get-Date -Format "yyyy-MM-dd HH:mm:ss.fff") | GUARD_OK | Profile=$p | UnifiedRoot=$UnifiedRoot | RunRoot=$RunRoot | PyExe=$PyExe | PyExeExists=$pyOk"
+Add-Content -LiteralPath $LogFile -Value $line
+
+[pscustomobject]@{
+  ok          = $true
+  profile     = $p
+  unifiedroot = $UnifiedRoot
+  runroot     = $RunRoot
+  pyexe       = $PyExe
+  pyexe_exists= $pyOk
+  logfile     = $LogFile
+}

@@ -1,0 +1,11 @@
+
+Name                               Length LastWriteTime
+----                               ------ -------------
+__write_probe.txt                       4 3/1/2026 9:27:44 PM
+shadow_plans.jsonl                      0 3/1/2026 9:18:04 PM
+ops                                       2/28/2026 9:38:32 AM
+engine_daily_metrics_20260228.json    170 2/28/2026 9:38:22 AM
+meta_engine.jsonl                     576 2/28/2026 9:38:22 AM
+engine_daily_metrics_20260227.json    170 2/27/2026 8:46:11 PM
+
+

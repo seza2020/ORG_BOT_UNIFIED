@@ -1,0 +1,15 @@
+BASELINE FREEZE NOTES V1
+
+PRIMARY_BASELINE=0.35
+BACKUP_BASELINE=0.40
+EXPLORATORY_BASELINE=0.45
+
+REJECTED=0.30,0.60
+
+RATIONALE_PRIMARY=best balance between confidence quality and usable sample
+RATIONALE_BACKUP=tighter than primary with still usable coverage
+RATIONALE_EXPLORATORY=high selectivity candidate for controlled comparison
+RATIONALE_REJECT_030=too permissive and likely to raise tail risk
+RATIONALE_REJECT_060=too restrictive for current paper baseline
+
+NEXT_STEP=STEP9A_PAPER_VALIDATION_PROTOCOL

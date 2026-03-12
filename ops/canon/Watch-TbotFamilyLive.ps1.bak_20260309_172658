@@ -1,0 +1,149 @@
+$ErrorActionPreference = "Stop"
+
+$U    = "C:\alpaca-bot\ORG_BOT_UNIFIED"
+$RTP  = Join-Path $U "runtime\paper"
+$LOGS = Join-Path $RTP "logs"
+$VAL  = Join-Path $RTP "validation_v2"
+$LOCK = Join-Path $RTP "locks\tbot_main.lock"
+
+function Get-LineCount([string]$Path) {
+  if (!(Test-Path $Path)) { return 0 }
+  try { return @(Get-Content $Path).Count } catch { return -1 }
+}
+
+function Get-LastWrite([string]$Path) {
+  if (!(Test-Path $Path)) { return "" }
+  try { return (Get-Item $Path).LastWriteTime.ToString("yyyy-MM-dd HH:mm:ss") } catch { return "" }
+}
+
+function Get-TailJsonBadCount([string]$Path, [int]$Tail = 100) {
+  if (!(Test-Path $Path)) { return 0 }
+  $bad = 0
+  try {
+    Get-Content $Path -Tail $Tail | ForEach-Object {
+      if ($_.Trim()) {
+        try { $_ | ConvertFrom-Json | Out-Null } catch { $bad++ }
+      }
+    }
+  } catch { $bad = -1 }
+  return $bad
+}
+
+function Get-ShadowStats([string]$Path, [int]$Tail = 100) {
+  $placeholder = 0
+  $nulls = 0
+  $valid = 0
+  if (!(Test-Path $Path)) {
+    return [PSCustomObject]@{ PlaceholderHits=0; NullFieldHits=0; ValidPlanCount=0 }
+  }
+  try {
+    Get-Content $Path -Tail $Tail | ForEach-Object {
+      $line = $_
+      if ($line.Trim()) {
+        if ($line -match "placeholder_shadow_plan") { $placeholder++ }
+        if ($line -match '"entry"\s*:\s*null' -or $line -match '"stop"\s*:\s*null' -or $line -match '"tp"\s*:\s*null' -or $line -match '"rr"\s*:\s*null') {
+          $nulls++
+        } else {
+          $valid++
+        }
+      }
+    }
+  } catch {}
+  return [PSCustomObject]@{ PlaceholderHits=$placeholder; NullFieldHits=$nulls; ValidPlanCount=$valid }
+}
+
+$files = @{
+  meta_events   = Join-Path $LOGS "meta_events.jsonl"
+  meta_engine   = Join-Path $LOGS "meta_engine.jsonl"
+  shadow_plans  = Join-Path $LOGS "shadow_plans.jsonl"
+  outcome       = Join-Path $VAL  "outcome_ledger.jsonl"
+  kpi           = Join-Path $VAL  "kpi_snapshots.jsonl"
+}
+
+$prev = @{
+  meta_events = Get-LineCount $files.meta_events
+  meta_engine = Get-LineCount $files.meta_engine
+  shadow      = Get-LineCount $files.shadow_plans
+  outcome     = Get-LineCount $files.outcome
+  kpi         = Get-LineCount $files.kpi
+}
+
+$here = Split-Path -Parent $MyInvocation.MyCommand.Path
+
+while ($true) {
+  $fams = & (Join-Path $here "Get-TbotFamilies.ps1")
+  $fcount = @($fams).Count
+  $familyRoots = if ($fcount -gt 0) { ($fams.RootPid | Sort-Object) -join "," } else { "" }
+  $familyMembers = if ($fcount -gt 0) { ($fams.MemberPids | Sort-Object) -join " || " } else { "" }
+
+  $currMetaEvents = Get-LineCount $files.meta_events
+  $currMetaEngine = Get-LineCount $files.meta_engine
+  $currShadow = Get-LineCount $files.shadow_plans
+  $currOutcome = Get-LineCount $files.outcome
+  $currKpi = Get-LineCount $files.kpi
+
+  $growMetaEvents = if ($prev.meta_events -ge 0 -and $currMetaEvents -ge 0) { $currMetaEvents - $prev.meta_events } else { -1 }
+  $growMetaEngine = if ($prev.meta_engine -ge 0 -and $currMetaEngine -ge 0) { $currMetaEngine - $prev.meta_engine } else { -1 }
+  $growShadow = if ($prev.shadow -ge 0 -and $currShadow -ge 0) { $currShadow - $prev.shadow } else { -1 }
+  $growOutcome = if ($prev.outcome -ge 0 -and $currOutcome -ge 0) { $currOutcome - $prev.outcome } else { -1 }
+  $growKpi = if ($prev.kpi -ge 0 -and $currKpi -ge 0) { $currKpi - $prev.kpi } else { -1 }
+
+  $shadowStats = Get-ShadowStats $files.shadow_plans 100
+  $badJsonTotal = @(
+    Get-TailJsonBadCount $files.meta_events 100,
+    Get-TailJsonBadCount $files.meta_engine 100,
+    Get-TailJsonBadCount $files.shadow_plans 100,
+    Get-TailJsonBadCount $files.outcome 100,
+    Get-TailJsonBadCount $files.kpi 100
+  ) | Where-Object { $_ -ge 0 } | Measure-Object -Sum | Select-Object -ExpandProperty Sum
+
+  $lockExists = Test-Path $LOCK
+  $lockPid = ""
+  if ($lockExists) {
+    try { $lockPid = (Get-Content $LOCK -Raw).Trim() } catch {}
+  }
+
+  $status = "OK"
+  if ($fcount -gt 1) { $status = "MULTI_FAMILY_FAIL" }
+  elseif ($shadowStats.PlaceholderHits -gt 0) { $status = "PLACEHOLDER_FAIL" }
+  elseif ($shadowStats.NullFieldHits -gt 0) { $status = "NULL_PLAN_FAIL" }
+  elseif ($badJsonTotal -gt 0) { $status = "BAD_JSON_FAIL" }
+
+  Clear-Host
+  Write-Host "FAMILY-AWARE LIVE MONITOR | هر 1 دقیقه | Ctrl+C برای توقف"
+  Write-Host ""
+  @(
+    [PSCustomObject]@{ Item="Status"; Value=$status }
+    [PSCustomObject]@{ Item="Family Count"; Value=$fcount }
+    [PSCustomObject]@{ Item="Family Roots"; Value=$familyRoots }
+    [PSCustomObject]@{ Item="Family Members"; Value=$familyMembers }
+    [PSCustomObject]@{ Item="Lock Exists"; Value=$lockExists }
+    [PSCustomObject]@{ Item="Lock PID"; Value=$lockPid }
+    [PSCustomObject]@{ Item="Meta Events Growth"; Value=$growMetaEvents }
+    [PSCustomObject]@{ Item="Meta Engine Growth"; Value=$growMetaEngine }
+    [PSCustomObject]@{ Item="Shadow Plans Growth"; Value=$growShadow }
+    [PSCustomObject]@{ Item="Valid Plan Count (tail)"; Value=$shadowStats.ValidPlanCount }
+    [PSCustomObject]@{ Item="Placeholder Hits (tail)"; Value=$shadowStats.PlaceholderHits }
+    [PSCustomObject]@{ Item="Null Field Hits (tail)"; Value=$shadowStats.NullFieldHits }
+    [PSCustomObject]@{ Item="Outcome Growth"; Value=$growOutcome }
+    [PSCustomObject]@{ Item="KPI Growth"; Value=$growKpi }
+    [PSCustomObject]@{ Item="Bad JSON Total (tail)"; Value=$badJsonTotal }
+    [PSCustomObject]@{ Item="Meta Events LastWrite"; Value=(Get-LastWrite $files.meta_events) }
+    [PSCustomObject]@{ Item="Meta Engine LastWrite"; Value=(Get-LastWrite $files.meta_engine) }
+    [PSCustomObject]@{ Item="Shadow LastWrite"; Value=(Get-LastWrite $files.shadow_plans) }
+    [PSCustomObject]@{ Item="Outcome LastWrite"; Value=(Get-LastWrite $files.outcome) }
+    [PSCustomObject]@{ Item="KPI LastWrite"; Value=(Get-LastWrite $files.kpi) }
+  ) | Format-Table -AutoSize
+
+  if ($fcount -gt 0) {
+    $fams | Format-Table -AutoSize | Out-Host
+  }
+
+  $prev.meta_events = $currMetaEvents
+  $prev.meta_engine = $currMetaEngine
+  $prev.shadow      = $currShadow
+  $prev.outcome     = $currOutcome
+  $prev.kpi         = $currKpi
+
+  Start-Sleep 60
+}

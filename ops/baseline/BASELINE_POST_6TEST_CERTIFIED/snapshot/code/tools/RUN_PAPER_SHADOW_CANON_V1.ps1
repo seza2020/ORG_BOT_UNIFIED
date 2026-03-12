@@ -1,0 +1,513 @@
+param(
+  [string]$ProjectRoot = "C:\alpaca-bot\org_bot",
+  [string]$ProfilePath = "C:\alpaca-bot\org_bot\tools\profiles\paper.profile.json",
+  [int]$Force = 0
+)
+
+
+
+
+
+# ORG_ORDERFIX_EARLY_PROFILE_V1
+$ErrorActionPreference="Stop"
+if(!(Test-Path -LiteralPath $ProfilePath)){ throw "Missing profile: $ProfilePath" }
+# --- RUNNER_PROFILEPATH_FIX_V1 ---
+if([string]::IsNullOrWhiteSpace([string]$env:TBOT_PROFILE_PATH)){
+  # Prefer TBOT_PROFILE as a real file path if it exists
+  $tbp = [string]$env:TBOT_PROFILE
+
+  if(-not [string]::IsNullOrWhiteSpace($tbp)){
+    try {
+      if(Test-Path -LiteralPath $tbp){
+        $env:TBOT_PROFILE_PATH = $tbp
+        return
+      }
+    } catch {}
+  }
+
+  # Otherwise resolve by name (TBOT_PROFILE_NAME or TBOT_PROFILE)
+  $pname = [string]$env:TBOT_PROFILE_NAME
+  if([string]::IsNullOrWhiteSpace($pname) -and -not [string]::IsNullOrWhiteSpace($tbp)){
+    if($tbp.Trim().ToUpper() -in @("PAPER","SHADOW")){
+      $pname = $tbp.Trim().ToUpper()
+      $env:TBOT_PROFILE_NAME = $pname
+    }
+  }
+
+  if($pname -eq "PAPER"){
+    $env:TBOT_PROFILE_PATH = Join-Path $ROOT "tools\profiles\paper.profile.json"
+  } elseif($pname -eq "SHADOW"){
+    $env:TBOT_PROFILE_PATH = Join-Path $ROOT "tools\profiles\shadow.profile.json"
+  }
+}
+
+$PROFILE = [string]$env:TBOT_PROFILE_PATH
+if([string]::IsNullOrWhiteSpace($PROFILE)){ throw "PROFILE_PATH_MISSING (set TBOT_PROFILE_PATH)" }
+# --- RUNNER_PROFILEPATH_FIX_V1 END ---
+$prof = (Get-Content -Raw $ProfilePath | ConvertFrom-Json)
+
+# --- SECRETS_DIAG_V3 (literal, null-safe) ---
+try{
+  $repDir = Join-Path $ROOT "logs\ops\runner_reports"
+  New-Item -ItemType Directory -Force $repDir | Out-Null
+  $rep = Join-Path $repDir ("RUNNER_SECRETS_DIAG_{0}.txt" -f (Get-Date -Format "yyyyMMdd_HHmmss"))
+
+  $profType = "<null>"
+  try { if($null -ne $prof){ $profType = $prof.GetType().FullName } } catch { $profType = "<error>" }
+
+  @(
+    "TS=$(Get-Date -Format o)"
+    "TBOT_PROFILE_NAME=$([string]$env:TBOT_PROFILE_NAME)"
+    "TBOT_PROFILE_PATH=$([string]$env:TBOT_PROFILE_PATH)"
+    "TBOT_PROFILE=$([string]$env:TBOT_PROFILE)"
+    "PROFILE_VAR=$([string]$PROFILE)"
+    "RUNROOT_VAR=$([string]$RunRoot)"
+    "SECRETS_VAR=$([string]$Secrets)"
+    "PROF_TYPE=$profType"
+    "PROF_HAS_secrets_ps1=$([bool]($prof.PSObject.Properties.Name -contains ""secrets_ps1""))"
+    "PROF_secrets_ps1=$([string]$prof.secrets_ps1)"
+  ) | Out-File -LiteralPath $rep -Encoding utf8
+
+  Write-Host ("SECRETS_DIAG_REPORT=" + $rep)
+}catch{
+  Write-Host ("SECRETS_DIAG_ERROR=" + $_.Exception.Message)
+}
+# --- SECRETS_DIAG_V3 END ---
+
+$RunRoot = [string]$prof.runroot
+
+
+
+
+# === CANON_RUNROOT_UNIFIED_PAPER2 ===
+$env:TBOT_RUNROOT = $RunRoot
+$env:TBOT_RUNTIME = $RunRoot
+# ===================================# === CANON_RUNROOT_UNIFIED_A ===
+$env:TBOT_RUNROOT = $RunRoot
+$env:TBOT_RUNTIME = $RunRoot
+# ==============================$Secrets = [string]$prof.secrets_ps1
+if([string]::IsNullOrWhiteSpace($RunRoot)){ throw "RUNROOT_MISSING_IN_PROFILE" }
+if(!(Test-Path $RunRoot)){ throw "Missing RunRoot: $RunRoot" }
+# --- RUNNER_SECRETS_ROOTFIX_V1 ---
+# Contract:
+# 1) Prefer prof.secrets_ps1 if Secrets var is empty.
+# 2) Fail-safe: for PAPER, default to tools\secrets\PAPER_SECRETS_ENTRY_V1.ps1 if still empty.
+try{
+  if([string]::IsNullOrWhiteSpace([string]$Secrets)){
+    try{
+      if($null -ne $prof){
+        $Secrets = [string]$prof.secrets_ps1
+      }
+    }catch{}
+  }
+
+  if([string]::IsNullOrWhiteSpace([string]$Secrets)){
+    $pname = [string]$env:TBOT_PROFILE_NAME
+    if([string]::IsNullOrWhiteSpace($pname)){
+      $pname = [string]$env:TBOT_PROFILE
+    }
+    if(($pname -match '^(?i)PAPER$')){
+      $Secrets = Join-Path $ROOT 'tools\secrets\PAPER_SECRETS_ENTRY_V1.ps1'
+    } elseif (($pname -match '^(?i)SHADOW$')){
+      $Secrets = Join-Path $ROOT 'tools\secrets\SHADOW_SECRETS_ENTRY_V1.ps1'
+    }
+  }
+}catch{}
+
+# Final validation (fail-closed)
+if([string]::IsNullOrWhiteSpace([string]$Secrets)){
+  throw "SECRETS_PS1_MISSING_IN_PROFILE"
+}
+if(!(Test-Path -LiteralPath $Secrets)){
+  throw ("Missing secrets file: " + $Secrets)
+}
+# --- RUNNER_SECRETS_ROOTFIX_V1 END ---
+if([string]::IsNullOrWhiteSpace($Secrets)){ throw "SECRETS_PS1_MISSING_IN_PROFILE" }
+if(!(Test-Path $Secrets)){ throw "Missing secrets file: $Secrets" }
+# ORG_ORDERFIX_EARLY_PROFILE_V1 END# OBS_ENV_INJECT_V1
+$env:TBOT_RUNROOT = "$RunRoot"
+$env:TBOT_RUNTIME = $env:TBOT_RUNROOT
+# --- SESSION_GUARD_RTH_V2 (RTH only; bypassable) ---
+try {
+  $nowLocal = Get-Date
+  $tzET = [TimeZoneInfo]::FindSystemTimeZoneById('Eastern Standard Time')
+  $nowET = [TimeZoneInfo]::ConvertTime($nowLocal, $tzET)
+
+  # RTH window in ET: 09:30 - 16:00
+  $startET = Get-Date -Date $nowET.Date.AddHours(9).AddMinutes(30)
+  $endET   = Get-Date -Date $nowET.Date.AddHours(16).AddMinutes(0)
+
+  if($env:TBOT_ALLOW_OUT_OF_SESSION -eq '1'){
+    Write-Host '[SESSION_GUARD] BYPASSED via TBOT_ALLOW_OUT_OF_SESSION=1'
+  } else {
+    if($nowET -lt $startET -or $nowET -gt $endET){
+      Write-Host ('[SESSION_GUARD] OUT_OF_SESSION: nowET={0} window=09:30-16:00 ET. Exiting 0.' -f $nowET.ToString('yyyy-MM-dd HH:mm:ss'))
+      exit 0
+    }
+  }
+} catch {
+  # Fail-open: do not block run if timezone conversion fails
+}
+# --- SESSION_GUARD_RTH_V2 END ---
+
+
+$ErrorActionPreference="Stop"
+# DEDUP_SECRETS_MARKER_RUNNER_PROFILE_ENFORCE_AND_LOAD (commented): # RUNNER_PROFILE_ENFORCE_AND_LOAD_V5 (derive from RunRoot; load secrets; verify TBOT_PROFILE)
+try{
+  $exp='PAPER'
+  $rr=([string]$RunRoot).ToLower()
+  if($rr -like '*\shadow*'){ $exp='SHADOW' }
+  elseif($rr -like '*\paper*'){ $exp='PAPER' }
+
+  $ldr = Join-Path $ProjectRoot 'tools\secrets\LOAD_PROFILE_SECRETS_V1.ps1'
+  if(!(Test-Path $ldr)){ throw ('MISSING_LOADER=' + $ldr) }
+
+  . $ldr -Profile $exp -ProjectRoot $ProjectRoot -RunRoot $RunRoot | Out-Null
+
+  $act = ([string]$env:TBOT_PROFILE).Trim().ToUpper()
+  if([string]::IsNullOrWhiteSpace($act)){ throw 'TBOT_PROFILE_MISSING' }
+  if($act -ne $exp){ throw ('TBOT_PROFILE_MISMATCH expected=' + $exp + ' actual=' + $act + ' runroot=' + $RunRoot) }
+}catch{ throw }
+# DEDUP_SECRETS_MARKER_LOAD_SECRETS_INFER_FROM_RUNROOT (commented): # LOAD_SECRETS_INFER_FROM_RUNROOT_V2
+try{
+  $prof='PAPER'
+  $rr = ([string]$RunRoot).ToLower()
+  if($rr -like '*\shadow*'){ $prof='SHADOW' }
+  $ldr = Join-Path $ProjectRoot 'tools\secrets\LOAD_PROFILE_SECRETS_V1.ps1'
+  . $ldr -Profile $prof -ProjectRoot $ProjectRoot -RunRoot $RunRoot | Out-Null
+} catch { throw }
+# DEDUP_SECRETS_MARKER_PROFILE_SECRETS_LOAD_V1 (commented): # PROFILE_SECRETS_LOAD_V1 (PAPER)
+try{
+  & (Join-Path $ProjectRoot "tools\secrets\LOAD_PROFILE_SECRETS_V1.ps1") -Profile "PAPER" | Out-Null
+}catch{ throw }
+
+# CONFIG_GATES_RUNNER_V1
+& "C:\Program Files\PowerShell\7\pwsh.exe" -NoProfile -ExecutionPolicy Bypass -File "C:\alpaca-bot\org_bot\tools\ops\VALIDATE_PAPER_CONFIG_GATES_V1.ps1" -ProjectRoot "C:\alpaca-bot\org_bot" -RunRoot "$RunRoot"
+if($LASTEXITCODE -ne 0){ throw "CONFIG_GATES_FAIL" }
+
+if(!(Test-Path -LiteralPath $ProfilePath)){ throw "Missing profile: $ProfilePath" }
+$prof = (Get-Content -Raw $ProfilePath | ConvertFrom-Json)
+
+$RunRoot = [string]$prof.runroot
+
+
+
+
+# === CANON_RUNROOT_UNIFIED_PAPER2 ===
+$env:TBOT_RUNROOT = $RunRoot
+$env:TBOT_RUNTIME = $RunRoot
+# ===================================# === CANON_RUNROOT_UNIFIED_A ===
+$env:TBOT_RUNROOT = $RunRoot
+$env:TBOT_RUNTIME = $RunRoot
+# ==============================$Secrets = [string]$prof.secrets_ps1
+if(!(Test-Path $RunRoot)){ throw "Missing RunRoot: $RunRoot" }
+if(!(Test-Path $Secrets)){ throw "Missing secrets file: $Secrets" }
+
+$PY = Join-Path $ProjectRoot ".venv\Scripts\python.exe"
+if(!(Test-Path $PY)){ throw "Missing python venv: $PY" }
+
+# ---- MUTEX (separate from shadow) ----
+$createdNew = $false
+$mutexName  = "Global\TBOT_RUN_PAPER_PROFILE_V1"
+$mutex      = [System.Threading.Mutex]::new($false, $mutexName, [ref]$createdNew)
+if (-not $mutex.WaitOne(0)) { Write-Host "[LOCK] BLOCK: another PAPER profile instance running."; exit 3 }
+
+try {
+  # ---- Strict single instance via RunRoot lock ----
+  $LockFile = Join-Path $RunRoot "state\locks\RUN_PAPER_PROFILE.lock"
+  New-Item -ItemType Directory -Force -Path (Split-Path $LockFile -Parent) | Out-Null
+
+  if((Test-Path $LockFile) -and $Force -ne 1){
+    Write-Host "[LOCK] BLOCK: lock exists. Use -Force 1 if you really want to replace."
+    exit 3
+  }
+  if($Force -eq 1 -and (Test-Path $LockFile)){
+    Remove-Item $LockFile -Force -ErrorAction SilentlyContinue
+  }
+
+  # Precheck (safe)
+  pwsh -NoProfile -ExecutionPolicy Bypass -File (Join-Path $ProjectRoot "tools\PRECHECK_PAPER_PROFILE_V1.ps1") `
+    -ProjectRoot $ProjectRoot -ProfilePath $ProfilePath
+
+  # Workdir = RunRoot (so relative logs are isolated)
+  Set-Location $RunRoot
+  $env:PYTHONPATH = $ProjectRoot
+# OBS_RUNROOT_DEDUPE_V1 (commented) $env:TBOT_RUNROOT = $RunRoot
+  # Load secrets (DO NOT PRINT)
+  . $Secrets
+
+  # Apply env from profile
+  foreach($kv in $prof.env.PSObject.Properties){
+    $envName  = [string]$kv.Name
+    $envValue = [string]$kv.Value
+    Set-Item -Path ("Env:{0}" -f $envName) -Value $envValue
+  }
+
+    # ORG_SYMBOLS_ENFORCE_V3 (derived from profile; enforce TBOT_SYMBOLS)
+  try {
+    $sy = [string]$env:TBOT_SYMBOLS
+    if([string]::IsNullOrWhiteSpace($sy)){
+      $sy = "SPY,QQQ,IWM,DIA,AAPL,MSFT,NVDA,AMZN,GOOGL,TSLA"
+    }
+    $sy = ($sy -replace "\s+","").Trim(",")
+    if([string]::IsNullOrWhiteSpace($sy)){
+      throw "SYMBOLS_MISSING: TBOT_SYMBOLS empty"
+    }
+    Set-Item -Path ("Env:{0}" -f "TBOT_SYMBOLS") -Value $sy
+
+    # tiny audit stamp (no secrets)
+    $AUD = Join-Path (Join-Path $RunRoot "logs\ops") ("AUDIT_SYMBOLS_{0}.txt" -f (Get-Date -Format "yyyyMMdd_HHmmss"))
+    New-Item -ItemType Directory -Force -Path (Split-Path $AUD -Parent) | Out-Null
+    @(
+      ("ts={0}" -f (Get-Date -Format s)),
+      ("profile=PAPER_PROFILE_V1"),
+      ("runroot=$RunRoot"),
+      ("TBOT_SYMBOLS={0}" -f $sy),
+      ("runner_patched=True"),
+      ("parse=OK")
+    ) | Set-Content -Encoding UTF8 -Path $AUD
+
+    Write-Host ("[AUDIT] SYMBOLS_ENFORCED -> {0}" -f $sy)
+    Write-Host ("[AUDIT] FILE -> {0}" -f $AUD)
+  } catch { throw }
+  # ORG_SYMBOLS_ENFORCE_V3 END
+# Paths inside RunRoot
+  $Logs = Join-Path $RunRoot "logs"
+  $Ops  = Join-Path $Logs "ops"
+  New-Item -ItemType Directory -Force -Path $Logs,$Ops | Out-Null
+
+  $ts = Get-Date -Format "yyyyMMdd_HHmmss"
+  $OUT = Join-Path $Ops ("LIVE_OUT_{0}.txt" -f $ts)
+  $ERR = Join-Path $Ops ("LIVE_ERR_{0}.txt" -f $ts)
+
+  $Meta    = Join-Path $Logs "meta.jsonl"
+  $Ann     = Join-Path $Logs "announce.log"
+  $Ledger  = Join-Path $Logs "trades"
+  $ShadowP = Join-Path $Logs "shadow_plans.jsonl"
+
+  # Build args from profile
+  $a = $prof.args
+  $argList = @("-u","-m","tbot.main","--run",
+    "--iters",[string]$a.iters,
+    "--sleep",[string]$a.sleep,
+    "--meta",$Meta,
+    "--announce",$Ann,
+    "--ledger_dir",$Ledger
+  )
+  if([bool]$a.shadow){
+    $argList += @("--shadow","--shadow_path",$ShadowP)
+  }
+
+  $argList += @(
+    "--gate_min_rr",[string]$a.gate_min_rr,
+    "--gate_min_conf",[string]$a.gate_min_conf,
+    "--gate_cooldown_sec",[string]$a.gate_cooldown_sec,
+    "--gate_max_plans_per_day",[string]$a.gate_max_plans_per_day,
+    "--gate_max_risk_per_trade_usd",[string]$a.gate_max_risk_per_trade_usd,
+    "--gate_max_risk_per_day_usd",[string]$a.gate_max_risk_per_day_usd
+  )
+
+    
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  # --- ATOMIC_RUNROOT_LOCK_V1 BEGIN ---
+  # Enforce strict single instance per RunRoot (atomic lock before engine launch)
+  $LockFile = Join-Path $RunRoot "state\locks\RUN_PAPER_PROFILE.lock"
+  New-Item -ItemType Directory -Force -Path (Split-Path $LockFile -Parent) | Out-Null
+
+  function _ReadLockPid([string]$path){
+    try {
+      $txt = Get-Content -LiteralPath $path -ErrorAction Stop
+      foreach($ln in $txt){
+        if($ln -match '^pid=(\d+)\s*$'){ return [int]$Matches[1] }
+      }
+    } catch {}
+    return $null
+  }
+
+  if(Test-Path $LockFile){
+    $lp = _ReadLockPid $LockFile
+    if($null -ne $lp){
+      if(Get-Process -Id $lp -ErrorAction SilentlyContinue){
+        Write-Host ("[LOCK] BLOCK: lock exists and pid alive. pid={0} file={1}" -f $lp,$LockFile)
+        exit 3
+      }
+    }
+    Remove-Item -LiteralPath $LockFile -Force -ErrorAction SilentlyContinue
+  }
+
+  @(
+    ("ts={0}" -f (Get-Date -Format s)),
+    ("pid=0"),
+    ("runroot={0}" -f $RunRoot)
+  ) | Set-Content -Encoding utf8 -LiteralPath $LockFile
+  # --- ATOMIC_RUNROOT_LOCK_V1 END ---
+  $cmdFile = Join-Path $Ops ("ENGINE_LAUNCH_CMD_{0}.txt" -f $ts)
+  ("[CMD] python -m tbot.main --run ..." ) | Set-Content -Encoding UTF8 -Path $cmdFile
+  $p = Start-Process -FilePath $PY -ArgumentList $argList `
+    -WorkingDirectory $RunRoot -RedirectStandardOutput $OUT -RedirectStandardError $ERR -PassThru
+
+# --- LOCK_PID_COMMIT_V1 BEGIN ---
+try {
+  if(Test-Path -LiteralPath $LockFile){
+    $lines = Get-Content -LiteralPath $LockFile -ErrorAction SilentlyContinue
+    $out = @()
+    $hasPid = $false
+    foreach($ln in $lines){
+      if($ln -match '^pid='){
+        $out += ("pid={0}" -f $p.Id)
+        $hasPid = $true
+      } else {
+        $out += $ln
+      }
+    }
+    if(-not $hasPid){ $out += ("pid={0}" -f $p.Id) }
+    $out | Set-Content -Encoding utf8 -LiteralPath $LockFile
+  }
+} catch {}
+# --- LOCK_PID_COMMIT_V1 END ---
+# --- ANTI_SELF_SPAWN_V2 BEGIN ---
+Start-Sleep -Seconds 2
+try {
+  $kids = Get-CimInstance Win32_Process -Filter "Name='python.exe'" | Where-Object {
+    $_.ParentProcessId -eq $p.Id -and
+    ([string]$_.CommandLine) -match 'tbot\.main' -and
+    ([string]$_.CommandLine) -match [regex]::Escape($RunRoot)
+  }
+  if($kids -and $kids.Count -gt 0){
+    Write-Host ("[ANTI_SELF_SPAWN] DETECTED kids={0} parent={1} -> KILL_KIDS" -f $kids.Count, $p.Id)
+    foreach($k in $kids){
+      Write-Host ("[ANTI_SELF_SPAWN] KILL kid_pid={0}" -f $k.ProcessId)
+      try { Stop-Process -Id $k.ProcessId -Force -ErrorAction SilentlyContinue } catch {}
+    }
+  }
+} catch {}
+
+Start-Sleep -Seconds 3
+$all = Get-CimInstance Win32_Process -Filter "Name='python.exe'" | Where-Object {
+  ([string]$_.CommandLine) -match 'tbot\.main' -and
+  ([string]$_.CommandLine) -match [regex]::Escape($RunRoot)
+}
+if($all.Count -ne 1){
+  Write-Host ("[ANTI_SELF_SPAWN] FAIL: expected 1 instance, got={0} -> KILL_ALL + EXIT 97" -f $all.Count)
+  $all | ForEach-Object { try{ Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }catch{} }
+  exit 97
+}
+# --- ANTI_SELF_SPAWN_V2 END ---
+
+  # --- ANTI_SELF_SPAWN_V1 BEGIN ---
+  Start-Sleep -Seconds 2
+
+  # Child self-spawn detection (ParentProcessId == $p.Id) for same RunRoot
+  $child = Get-CimInstance Win32_Process -Filter "Name='python.exe'" | Where-Object {
+    $_.ParentProcessId -eq $p.Id -and
+    ([string]$_.CommandLine) -match 'tbot\.main' -and
+    ([string]$_.CommandLine) -match [regex]::Escape($RunRoot)
+  }
+
+  if($child -and $child.Count -gt 0){
+    Write-Host ("[ANTI_SELF_SPAWN] DETECTED child_count={0} parent_pid={1} -> KILL_CHILDREN" -f $child.Count, $p.Id)
+    $child | ForEach-Object {
+      Write-Host ("[ANTI_SELF_SPAWN] KILL child_pid={0}" -f $_.ProcessId)
+      try { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue } catch {}
+    }
+  }
+
+  Start-Sleep -Seconds 1
+
+  # Final assertion: exactly ONE tbot.main instance for this RunRoot
+  $all = Get-CimInstance Win32_Process -Filter "Name='python.exe'" | Where-Object {
+    ([string]$_.CommandLine) -match 'tbot\.main' -and
+    ([string]$_.CommandLine) -match [regex]::Escape($RunRoot)
+  }
+
+  if($all.Count -ne 1){
+    Write-Host ("[ANTI_SELF_SPAWN] FAIL: expected 1 instance, got={0}. KILL_ALL + EXIT 97" -f $all.Count)
+    $all | ForEach-Object { try{ Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }catch{} }
+    exit 97
+  }
+  # --- ANTI_SELF_SPAWN_V1 END ---
+
+  $pidFile = Join-Path $Ops ("ENGINE_PID_{0}.txt" -f $ts)
+  ("pid={0}`nout={1}`nerr={2}`nrunroot={3}" -f $p.Id, $OUT, $ERR, $RunRoot) | Set-Content -Encoding UTF8 -Path $pidFile
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  # --- ATOMIC_RUNROOT_LOCK_V1 PID COMMIT ---
+  try {
+    if(Test-Path $LockFile){
+      $lines = Get-Content -LiteralPath $LockFile -ErrorAction SilentlyContinue
+      $out2 = @()
+      foreach($ln in $lines){
+        if($ln -match '^pid='){ $out2 += ("pid={0}" -f $p.Id) }
+        else { $out2 += $ln }
+      }
+      $out2 += ("out={0}" -f $OUT)
+      $out2 += ("err={0}" -f $ERR)
+      $out2 | Set-Content -Encoding utf8 -LiteralPath $LockFile
+    }
+  } catch {}
+  Start-Sleep -Seconds 2
+  if(-not (Get-Process -Id $p.Id -ErrorAction SilentlyContinue)){
+    Write-Host ("[ENGINE] FAIL: not alive after launch. pid={0}" -f $p.Id)
+    Write-Host ("[ENGINE] OUT={0}" -f $OUT)
+    Write-Host ("[ENGINE] ERR={0}" -f $ERR)
+    if(Test-Path -LiteralPath $ERR){
+      Write-Host "=== ERR TAIL (200) ==="
+      Get-Content -LiteralPath $ERR -Tail 200 | ForEach-Object { Write-Host $_ }
+    }
+    exit 92
+  }
+  Write-Host ("[ENGINE] OK: pid={0} pid_file={1}" -f $p.Id, $pidFile)
+  # --- ENGINE_LAUNCH_VERIFY_V1 END ---
+
+  # Write lock
+  @(
+    ("ts={0}" -f (Get-Date -Format s)),
+    ("runroot={0}" -f $RunRoot),
+    ("out={0}" -f $OUT),
+    ("err={0}" -f $ERR)
+  ) | Set-Content -Encoding UTF8 -Path $LockFile
+
+  Write-Host "# ---- AUTO_PATCH: ENV_RUNROOT_V1 ----
+# OBS_RUNROOT_DEDUPE_V1 (commented) $env:TBOT_RUNROOT = $RunRoot
+# OBS_RUNROOT_DEDUPE_V1 (commented) $env:TBOT_RUNTIME = $RunRoot
+# -----------------------------------
+STARTED: PAPER_PROFILE_V1"
+  Write-Host ("OUT={0}" -f $OUT)
+  Write-Host ("ERR={0}" -f $ERR)
+
+} finally {
+  try { $mutex.ReleaseMutex() } catch {}
+  try { $mutex.Dispose() } catch {}
+}
+
+
+
+

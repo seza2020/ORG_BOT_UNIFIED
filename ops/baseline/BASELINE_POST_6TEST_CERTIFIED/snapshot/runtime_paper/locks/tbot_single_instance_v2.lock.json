@@ -1,0 +1,11 @@
+{
+  "wrapper_pid": 23124,
+  "runroot": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\runtime\\paper",
+  "python": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\code\\.venv\\Scripts\\python.exe",
+  "machine": "ARMINPC",
+  "owner_pid": 23124,
+  "user": "armin",
+  "code_root": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\code",
+  "profile": "paper",
+  "created_utc": "2026-03-08T19:00:21.6759753Z"
+}

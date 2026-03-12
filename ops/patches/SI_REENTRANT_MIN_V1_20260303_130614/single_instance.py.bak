@@ -1,0 +1,144 @@
+from __future__ import annotations
+
+import json
+import os
+import sys
+import time
+from dataclasses import dataclass
+
+_EXIT_CODE = 86
+
+def _stderr(msg: str) -> None:
+    try:
+        sys.stderr.write(msg.rstrip() + "\n")
+    except Exception:
+        pass
+
+def _get_runroot() -> str | None:
+    rr = os.environ.get("TBOT_RUNROOT") or os.environ.get("tbot_runroot")
+    if rr and isinstance(rr, str) and rr.strip():
+        return rr.strip()
+    return None
+
+def _lock_dir(runroot: str) -> str:
+    return os.path.join(runroot, "state", "locks")
+
+def _lock_path(runroot: str, profile: str) -> str:
+    p = (profile or "PAPER").strip().upper()
+    return os.path.join(_lock_dir(runroot), f"TBOT_SINGLE_INSTANCE_{p}.lock")
+
+def _read_lock(lockpath: str) -> dict | None:
+    try:
+        with open(lockpath, "r", encoding="utf-8") as f:
+            raw = f.read().strip()
+        if not raw:
+            return None
+        # allow plain pid fallback
+        if raw.isdigit():
+            return {"pid": int(raw), "ts": None, "argv": None}
+        return json.loads(raw)
+    except Exception:
+        return None
+
+def _pid_alive(pid: int) -> bool:
+    try:
+        # process existence only
+        os.kill(pid, 0)
+        return True
+    except Exception:
+        return False
+
+def _pid_is_tbot(pid: int) -> bool:
+    """
+    Validate that PID is actually a python tbot.main instance from ORG_BOT_UNIFIED.
+    On Windows, we use WMI via powershell if available; fallback to existence check.
+    """
+    try:
+        if os.name != "nt":
+            return _pid_alive(pid)
+
+        import subprocess
+        ps = [
+            "powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command",
+            (
+                "$p = Get-CimInstance Win32_Process -Filter \"ProcessId=%d\" 2>$null; "
+                "if(!$p){ exit 2 }; "
+                "$c = $p.CommandLine; "
+                "if($c -match 'tbot\\.main' -and $c -match 'ORG_BOT_UNIFIED'){ exit 0 } else { exit 3 }"
+            ) % pid
+        ]
+        r = subprocess.run(ps, capture_output=True, text=True)
+        return r.returncode == 0
+    except Exception:
+        return _pid_alive(pid)
+
+def _try_remove(lockpath: str) -> None:
+    try:
+        os.remove(lockpath)
+    except Exception:
+        pass
+
+def _atomic_create_excl(lockpath: str) -> int:
+    # Works on Windows too: create exclusively
+    return os.open(lockpath, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+
+def enforce_single_instance(profile: str = "PAPER", runroot: str | None = None) -> None:
+    rr = runroot or _get_runroot()
+    if not rr:
+        _stderr("[SINGLE_INSTANCE] TBOT_RUNROOT missing -> skip enforcement (fail-open)")
+        return
+
+    ld = _lock_dir(rr)
+    os.makedirs(ld, exist_ok=True)
+    lp = _lock_path(rr, profile)
+
+    # 1) Try exclusive create
+    try:
+        fd = _atomic_create_excl(lp)
+    except FileExistsError:
+        info = _read_lock(lp) or {}
+        pid = info.get("pid")
+        if isinstance(pid, int) and pid > 0 and _pid_is_tbot(pid):
+            _stderr(f"[SINGLE_INSTANCE] FILE_LOCK_EXISTS path={lp} owner={json.dumps(info, ensure_ascii=False)} -> exit {_EXIT_CODE}")
+            raise SystemExit(_EXIT_CODE)
+
+        # stale lock -> remove and retry once
+        _stderr(f"[SINGLE_INSTANCE] FILE_LOCK_STALE path={lp} owner={json.dumps(info, ensure_ascii=False)} -> removing")
+        _try_remove(lp)
+        try:
+            fd = _atomic_create_excl(lp)
+        except Exception:
+            _stderr(f"[SINGLE_INSTANCE] FILE_LOCK_RETRY_FAILED path={lp} -> exit {_EXIT_CODE}")
+            raise SystemExit(_EXIT_CODE)
+    except Exception as e:
+        _stderr(f"[SINGLE_INSTANCE] FILE_LOCK_CREATE_FAILED path={lp} err={repr(e)} -> fail-open")
+        return
+
+    # 2) Write payload
+    try:
+        payload = {"pid": os.getpid(), "ppid": os.getppid(), "ts": time.time(), "argv": sys.argv}
+        os.write(fd, json.dumps(payload).encode("utf-8"))
+        _stderr(f"[SINGLE_INSTANCE] FILE_LOCK_ACQUIRED path={lp}")
+    finally:
+        try:
+            os.close(fd)
+        except Exception:
+            pass
+
+    # 3) Cleanup on exit (best-effort)
+    try:
+        import atexit
+        pid = os.getpid()
+
+        def _cleanup() -> None:
+            try:
+                cur = _read_lock(lp) or {}
+                if int(cur.get("pid") or -1) != pid:
+                    return
+                _try_remove(lp)
+            except Exception:
+                pass
+
+        atexit.register(_cleanup)
+    except Exception:
+        pass

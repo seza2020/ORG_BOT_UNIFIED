@@ -1,0 +1,977 @@
+import os
+import json
+import time
+import traceback
+
+try:
+    from tbot.analytics import SimpleMetaStrategyEngine
+    from tbot.analytics import StrategyHealthMonitor
+    from tbot.analytics import PortfolioRiskEngine
+    from tbot.analytics import RiskLedger
+except Exception:
+    SimpleMetaStrategyEngine = None
+
+try:
+    from tbot.analytics import StrategyPerformanceManager
+except Exception:
+    StrategyPerformanceManager = None
+
+def _runroot() -> str:
+    return os.getenv("TBOT_RUNROOT") or os.path.join(os.getcwd(), "runtime", "paper")
+
+def _meta_path() -> str:
+    return os.path.join(_runroot(), "logs", "meta_events.jsonl")
+
+def _engine_path() -> str:
+    return os.path.join(_runroot(), "logs", "meta_engine.jsonl")
+
+def _shadow_path() -> str:
+    return os.path.join(_runroot(), "logs", "shadow_plans.jsonl")
+
+_meta_engine = None
+
+def _get_meta_engine():
+    global _meta_engine
+    try:
+        if _meta_engine is None and SimpleMetaStrategyEngine is not None:
+            _meta_engine = SimpleMetaStrategyEngine.from_env()
+        return _meta_engine
+    except Exception:
+        return None
+
+
+_perf_mgr = None
+
+
+_health_monitor = None
+
+def _get_health_monitor():
+    global _health_monitor
+    try:
+        if _health_monitor is None and StrategyHealthMonitor is not None:
+            _health_monitor = StrategyHealthMonitor.from_env()
+        return _health_monitor
+    except Exception:
+        return None
+
+def _get_health_snapshot_row(strategy_id: str, market_state: str = None, regime_name: str = None):
+    try:
+        import json
+        sp = os.path.join(_runroot(), 'logs', 'strategy_perf_snapshot.json')
+        if not os.path.exists(sp):
+            return None
+        with open(sp, 'r', encoding='utf-8') as f:
+            payload = json.load(f)
+        rows = payload.get('rows', []) if isinstance(payload, dict) else []
+        if not isinstance(rows, list):
+            return None
+        sid = str(strategy_id or 'UNKNOWN')
+        ms = str(market_state or 'UNKNOWN').upper() if market_state is not None else None
+        rg = str(regime_name or 'UNKNOWN').upper() if regime_name is not None else None
+        exact = None
+        fallback = None
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            if str(row.get('strategy_id') or 'UNKNOWN') != sid:
+                continue
+            if fallback is None:
+                fallback = row
+            row_ms = str(row.get('market_state') or 'UNKNOWN').upper()
+            row_rg = str(row.get('regime') or 'UNKNOWN').upper()
+            if (ms is None or row_ms == ms) and (rg is None or row_rg == rg):
+                exact = row
+                break
+        return exact or fallback
+    except Exception:
+        return None
+
+
+_portfolio_risk_engine = None
+
+def _get_portfolio_risk_engine():
+    global _portfolio_risk_engine
+    try:
+        if _portfolio_risk_engine is None and PortfolioRiskEngine is not None:
+            _portfolio_risk_engine = PortfolioRiskEngine.from_env()
+        return _portfolio_risk_engine
+    except Exception:
+        return None
+
+def _get_portfolio_budget_inputs(run_id=None):
+    try:
+        state = _get_risk_ledger_state(run_id=run_id)
+        daily_budget_r = float(os.getenv('TBOT_PORT_DAILY_BUDGET_R', '5.0') or '5.0')
+        weekly_budget_r = float(os.getenv('TBOT_PORT_WEEKLY_BUDGET_R', '10.0') or '10.0')
+        proposed_risk_r = float(os.getenv('TBOT_PORT_PROPOSED_RISK_R', '1.0') or '1.0')
+        if state is not None:
+            daily_budget_remaining_r = max(0.0, daily_budget_r - float(getattr(state, 'daily_budget_used_r', 0.0) or 0.0))
+            weekly_budget_remaining_r = max(0.0, weekly_budget_r - float(getattr(state, 'weekly_budget_used_r', 0.0) or 0.0))
+            total_open_risk_r = max(0.0, float(getattr(state, 'open_risk_r', 0.0) or 0.0))
+            return {
+                'daily_budget_remaining_r': daily_budget_remaining_r,
+                'weekly_budget_remaining_r': weekly_budget_remaining_r,
+                'proposed_risk_r': proposed_risk_r,
+                'total_open_risk_r': total_open_risk_r,
+            }
+        return {
+            'daily_budget_remaining_r': daily_budget_r,
+            'weekly_budget_remaining_r': weekly_budget_r,
+            'proposed_risk_r': proposed_risk_r,
+            'total_open_risk_r': 0.0,
+        }
+    except Exception:
+        return {
+            'daily_budget_remaining_r': 5.0,
+            'weekly_budget_remaining_r': 10.0,
+            'proposed_risk_r': 1.0,
+            'total_open_risk_r': 0.0,
+        }
+
+def _get_risk_ledger():
+    global _risk_ledger
+    try:
+        if _risk_ledger is None and RiskLedger is not None:
+            _risk_ledger = RiskLedger.from_env()
+        return _risk_ledger
+    except Exception:
+        return None
+
+def _get_risk_ledger_state(run_id=None):
+    global _risk_ledger_state
+    try:
+        ledger = _get_risk_ledger()
+        if ledger is None:
+            return None
+        if _risk_ledger_state is None:
+            _risk_ledger_state = ledger.load_or_create(run_id=(run_id or ''))
+            _emit('risk_ledger_loaded', ledger.snapshot(_risk_ledger_state), run_id=run_id)
+        return _risk_ledger_state
+    except Exception as e:
+        _emit('risk_ledger_error', {'err': str(e)}, run_id=run_id)
+        return None
+
+def _save_risk_ledger_state(state, run_id=None):
+    global _risk_ledger_state
+    try:
+        ledger = _get_risk_ledger()
+        if ledger is None or state is None:
+            return False
+        ledger.save_atomic(state)
+        _risk_ledger_state = state
+        return True
+    except Exception as e:
+        _emit('risk_ledger_error', {'err': str(e)}, run_id=run_id)
+        return False
+
+
+_warmup_profile_cache = None
+
+def _get_warmup_profile(run_id=None):
+    global _warmup_profile_cache
+    try:
+        if _warmup_profile_cache is None:
+            runroot = os.getenv('TBOT_RUNROOT') or os.getcwd()
+            candidate = os.path.join(os.path.dirname(os.path.dirname(runroot)), 'ops', 'validation', 'warmup_profile_v1.json')
+            if os.path.exists(candidate):
+                with open(candidate, 'r', encoding='utf-8') as f:
+                    _warmup_profile_cache = json.load(f)
+                _emit('warmup_profile_loaded', {'path': candidate, 'mode': _warmup_profile_cache.get('mode')}, run_id=run_id)
+            else:
+                _warmup_profile_cache = {}
+        return _warmup_profile_cache or {}
+    except Exception as e:
+        _emit('warmup_profile_error', {'err': str(e)}, run_id=run_id)
+        return {}
+
+def _is_warmup_mode(run_id=None):
+    try:
+        p = _get_warmup_profile(run_id=run_id)
+        return str(p.get('mode') or '').upper() == 'PAPER_WARMUP'
+    except Exception:
+        return False
+
+def _get_effective_min_conf(run_id=None):
+    try:
+        default_min_conf = float(os.getenv('TBOT_GATE_MIN_CONF', '0.55') or '0.55')
+        if _is_warmup_mode(run_id=run_id):
+            p = _get_warmup_profile(run_id=run_id)
+            return float(p.get('confidence_threshold', default_min_conf) or default_min_conf)
+        return default_min_conf
+    except Exception:
+        return float(os.getenv('TBOT_GATE_MIN_CONF', '0.55') or '0.55')
+
+def _warmup_alpha_allowed(alpha_mode, run_id=None):
+    try:
+        mode = str(alpha_mode or 'OFF').upper()
+        if _is_warmup_mode(run_id=run_id):
+            return mode in {'ON', 'CAP50'}
+        return mode == 'ON'
+    except Exception:
+        return False
+
+
+_chop_v1_builder = None
+
+def _get_chop_v1_builder():
+    global _chop_v1_builder
+    try:
+        if _chop_v1_builder is None:
+            from tbot.runtime.chop_v1 import build_chop_v1_plan as _builder
+            _chop_v1_builder = _builder
+        return _chop_v1_builder
+    except Exception:
+        return None
+
+def _get_perf_mgr():
+    global _perf_mgr
+    try:
+        if _perf_mgr is None and StrategyPerformanceManager is not None:
+            _perf_mgr = StrategyPerformanceManager.from_env()
+        return _perf_mgr
+    except Exception:
+        return None
+
+def _emit_perf_event(
+    *,
+    strategy_id,
+    symbol,
+    event_type,
+    market_state="UNKNOWN",
+    regime="UNKNOWN",
+    alpha_mode="OFF",
+    reason="",
+    confidence=None,
+    rr=None,
+    compliance_ok=True,
+    run_id=None,
+    side=None,
+    realized_r=None,
+    hold_minutes=None,
+    extra=None,
+):
+    try:
+        mgr = _get_perf_mgr()
+        if mgr is None:
+            return
+        mgr.emit_simple(
+            ts=None,
+            strategy_id=str(strategy_id or "UNKNOWN"),
+            symbol=str(symbol or "UNKNOWN"),
+            event_type=str(event_type or "unknown"),
+            market_state=str(market_state or "UNKNOWN"),
+            regime=str(regime or "UNKNOWN"),
+            alpha_mode=str(alpha_mode or "OFF"),
+            reason=str(reason or ""),
+            confidence=confidence,
+            rr=rr,
+            compliance_ok=bool(compliance_ok),
+            run_id=run_id,
+            side=side,
+            realized_r=realized_r,
+            hold_minutes=hold_minutes,
+            extra=extra or {},
+        )
+    except Exception:
+        return
+
+
+def _emit(kind: str, payload: dict, level: str = "INFO", run_id=None) -> None:
+    try:
+        p = _meta_path()
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        row = {
+            "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "level": level,
+            "kind": kind,
+            "run_id": run_id,
+            "payload": payload or {},
+        }
+        with open(p, "a", encoding="utf-8") as f:
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+    except Exception:
+        pass
+
+def _emit_engine(name: str, payload: dict, run_id=None) -> None:
+    try:
+        p = _engine_path()
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        row = {
+            "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "name": name,
+            "run_id": run_id,
+            "payload": payload or {},
+        }
+        with open(p, "a", encoding="utf-8") as f:
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+    except Exception:
+        pass
+
+def _safe_build_market_snapshot(symbols, run_id=None):
+    try:
+        from tbot.market.market_provider import build_market_snapshot
+    except BaseException as e:
+        _emit(
+            "market_snapshot_import_fail",
+            {
+                "error_type": type(e).__name__,
+                "error": str(e),
+                "traceback": traceback.format_exc(limit=8),
+            },
+            level="ERROR",
+            run_id=run_id,
+        )
+        return None
+
+    try:
+        return build_market_snapshot(tuple(symbols))
+    except BaseException as e:
+        _emit(
+            "market_snapshot_call_fail",
+            {
+                "error_type": type(e).__name__,
+                "error": str(e),
+                "traceback": traceback.format_exc(limit=8),
+            },
+            level="ERROR",
+            run_id=run_id,
+        )
+        return None
+
+def _safe_regime(snapshot, run_id=None):
+    try:
+        from tbot.runtime.regime import compute_regime
+        return compute_regime(snapshot)
+    except BaseException as e:
+        _emit(
+            "regime_fail",
+            {
+                "error_type": type(e).__name__,
+                "error": str(e),
+                "traceback": traceback.format_exc(limit=8),
+            },
+            level="ERROR",
+            run_id=run_id,
+        )
+        return {"regime": "ERROR", "confidence": 0.0, "alpha_mode": "OFF", "reason": "regime_fail"}
+
+def _safe_core_context(snapshot, regime, run_id=None):
+    try:
+        from tbot.runtime.core_context import build_core_context
+        return build_core_context(snapshot, regime)
+    except BaseException as e:
+        _emit(
+            "core_context_fail",
+            {
+                "error_type": type(e).__name__,
+                "error": str(e),
+                "traceback": traceback.format_exc(limit=8),
+            },
+            level="ERROR",
+            run_id=run_id,
+        )
+        return {"bias": "FLAT", "trend_strength": 0.0, "reason": "core_context_fail"}
+
+def _safe_alpha_mode(core_ctx, regime, run_id=None):
+    try:
+        from tbot.runtime.alpha_mode import compute_alpha_mode
+        return compute_alpha_mode(core_ctx, regime)
+    except BaseException as e:
+        _emit(
+            "alpha_mode_fail",
+            {
+                "error_type": type(e).__name__,
+                "error": str(e),
+                "traceback": traceback.format_exc(limit=8),
+            },
+            level="ERROR",
+            run_id=run_id,
+        )
+        return {"mode": "OFF", "cap_ratio": 0.0, "reason": "alpha_mode_fail"}
+
+def _compute_validation_plan(snap, symbols, regime, core_ctx, alpha, run_id=None):
+    sym = symbols[0] if symbols else "SPY"
+    snap_obj = getattr(snap, sym, None)
+    if snap_obj is None:
+        return None, "snapshot_symbol_missing"
+
+    last = getattr(snap_obj, "last", None)
+    vwap = getattr(snap_obj, "vwap", None)
+    ema_fast = getattr(snap_obj, "ema_fast", None)
+    ema_slow = getattr(snap_obj, "ema_slow", None)
+
+    ref = last if last is not None else vwap
+    if ref is None:
+        return None, "no_price_reference"
+
+    entry = float(ref)
+
+    bias = str(core_ctx.get("bias") or "FLAT").upper()
+    side = "BUY"
+    if bias in ("SHORT", "SELL", "BEARISH"):
+        side = "SELL"
+
+    stop_pct = 0.005
+    tp_pct = 0.010
+
+    if side == "BUY":
+        stop = entry * (1.0 - stop_pct)
+        tp = entry * (1.0 + tp_pct)
+        rr = (tp - entry) / max(1e-9, (entry - stop))
+    else:
+        stop = entry * (1.0 + stop_pct)
+        tp = entry * (1.0 - tp_pct)
+        rr = (entry - tp) / max(1e-9, (stop - entry))
+
+    conf = float(regime.get("confidence", 0.0) or 0.0)
+
+    plan = {
+        "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "run_id": run_id,
+        "sid": "A_VALIDATION_PIPELINE_V1",
+        "symbol": sym,
+        "side": side,
+        "entry": round(float(entry), 4),
+        "stop": round(float(stop), 4),
+        "tp": round(float(tp), 4),
+        "rr": round(float(rr), 4),
+        "confidence": round(conf, 4),
+        "reason": "validation_plan_live_snapshot_v1",
+        "regime": regime.get("regime"),
+        "bias": core_ctx.get("bias"),
+        "alpha_mode": alpha.get("mode"),
+        "price_ref": {
+            "last": last,
+            "vwap": vwap,
+            "ema_fast": ema_fast,
+            "ema_slow": ema_slow,
+        },
+    }
+    return plan, "ok"
+
+def run_loop(args):
+    run_id = getattr(args, "run_id", None)
+    iters = int(getattr(args, "iters", 999999) or 999999)
+    sleep_s = float(getattr(args, "sleep", 0.5) or 0.5)
+    symbols = getattr(args, "symbols", None) or ["SPY", "QQQ", "IWM", "NVDA", "AAPL", "TSLA"]
+
+    boot_payload = {"iters": iters, "sleep": sleep_s, "symbols": list(symbols)}
+    print("boot", boot_payload, flush=True)
+    _emit("boot", boot_payload, run_id=run_id)
+
+    for i in range(iters):
+        _emit_engine("run_loop_enter", {"i": i, "symbols": list(symbols)}, run_id=run_id)
+
+        snap = _safe_build_market_snapshot(symbols, run_id=run_id)
+
+        hb = {"i": i, "has_snapshot": bool(snap is not None)}
+        print("heartbeat", hb, flush=True)
+        _emit("heartbeat", hb, run_id=run_id)
+
+        if not snap:
+            if sleep_s > 0:
+                time.sleep(sleep_s)
+            continue
+
+        regime = _safe_regime(snap, run_id=run_id)
+        _emit("regime", regime, run_id=run_id)
+
+        core_ctx = _safe_core_context(snap, regime, run_id=run_id)
+        _emit("core_context", core_ctx, run_id=run_id)
+
+        alpha = _safe_alpha_mode(core_ctx, regime, run_id=run_id)
+        _emit("alpha_mode", alpha, run_id=run_id)
+
+        strategy_result = {
+            "symbol_count": len(symbols),
+            "snapshot_ok": True,
+            "regime": regime.get("regime"),
+            "bias": core_ctx.get("bias"),
+            "alpha_mode": alpha.get("mode"),
+            "reason": "validation_runtime_active_v1",
+        }
+        _emit("strategy_result", strategy_result, run_id=run_id)
+
+        signal_eval = {
+            "symbol": symbols[0] if symbols else "SPY",
+            "symbol_count": len(symbols),
+            "regime": regime.get("regime"),
+            "bias": core_ctx.get("bias"),
+            "alpha_mode": alpha.get("mode"),
+            "trend_strength": core_ctx.get("trend_strength"),
+            "confidence": regime.get("confidence"),
+            "reason": "signal_eval_runtime_v1",
+        }
+        _emit("signal_eval", signal_eval, run_id=run_id)
+
+        plan, plan_reason = _compute_validation_plan(
+            snap=snap,
+            symbols=symbols,
+            regime=regime,
+            core_ctx=core_ctx,
+            alpha=alpha,
+            run_id=run_id,
+        )
+
+        min_conf = _get_effective_min_conf(run_id=run_id)
+        min_rr = float(os.getenv("TBOT_GATE_MIN_RR", "1.5") or "1.5")
+
+
+        # === CHOP_V1 strategy hook ===
+        try:
+            if str(regime.get('regime') or '').upper() == 'CHOP':
+                chop_builder = _get_chop_v1_builder()
+                _emit(
+                    'chop_v1_eval',
+                    {
+                        'regime': regime.get('regime'),
+                        'bias': core_ctx.get('bias'),
+                        'symbol': symbols[0] if symbols else 'SPY',
+                    },
+                    run_id=run_id,
+                )
+                if chop_builder is not None:
+                    chop_plan = chop_builder(
+                        snap,
+                        core_ctx,
+                        regime,
+                        run_id=run_id,
+                        symbol=(symbols[0] if symbols else 'SPY'),
+                    )
+                    if chop_plan is not None:
+                        plan = chop_plan
+                        _emit('chop_v1_plan_created', plan, run_id=run_id)
+                    else:
+                        _emit(
+                            'chop_v1_rejected',
+                            {
+                                'symbol': symbols[0] if symbols else 'SPY',
+                                'reason': 'chop_v1_no_candidate',
+                                'bias': core_ctx.get('bias'),
+                            },
+                            run_id=run_id,
+                        )
+        except Exception as e:
+            _emit('chop_v1_rejected', {'reason': f'chop_v1_exception:{type(e).__name__}', 'err': str(e)}, run_id=run_id)
+
+        gate_reason = "ok"
+        gate_meta = {
+            "symbol": symbols[0] if symbols else "SPY",
+            "regime": regime.get("regime"),
+            "bias": core_ctx.get("bias"),
+            "alpha_mode": alpha.get("mode"),
+            "confidence": regime.get("confidence"),
+            "min_conf": min_conf,
+            "min_rr": min_rr,
+        }
+
+        if plan is None:
+            gate_reason = plan_reason or "plan_none"
+        elif not _warmup_alpha_allowed(alpha.get('mode'), run_id=run_id):
+            gate_reason = "alpha_mode_off"
+        elif float(regime.get("confidence", 0.0) or 0.0) < min_conf:
+            gate_reason = "confidence_below_min"
+        elif float(plan.get("rr", 0.0) or 0.0) < min_rr:
+            gate_reason = "rr_below_min"
+
+        if gate_reason != "ok":
+            _emit(
+                "gate_decision",
+                {
+                    "decision": "REJECT",
+                    "reason": gate_reason,
+                    **gate_meta,
+                },
+                run_id=run_id,
+            )
+            _emit(
+                "rejection_reason",
+                {
+                    "reason": gate_reason,
+                    **gate_meta,
+                },
+                run_id=run_id,
+            )
+            _emit_perf_event(
+                strategy_id=(plan.get("sid") if isinstance(plan, dict) else "UNKNOWN"),
+                symbol=(symbols[0] if symbols else "SPY"),
+                event_type="rejection_reason",
+                market_state=str(regime.get("regime") or "UNKNOWN"),
+                regime=str(regime.get("regime") or "UNKNOWN"),
+                alpha_mode=str(alpha.get("mode") or "OFF"),
+                reason=str(gate_reason or ""),
+                confidence=regime.get("confidence"),
+                rr=(plan.get("rr") if isinstance(plan, dict) else None),
+                compliance_ok=True,
+                run_id=run_id,
+                side=(plan.get("side") if isinstance(plan, dict) else None),
+                extra={"source": "orchestrator.rejection_reason"},
+            )
+            _emit(
+                "plan_skipped",
+                {
+                    "reason": gate_reason,
+                    "symbol": symbols[0] if symbols else "SPY",
+                },
+                run_id=run_id,
+            )
+            _emit_perf_event(
+                strategy_id=(plan.get("sid") if isinstance(plan, dict) else "UNKNOWN"),
+                symbol=(symbols[0] if symbols else "SPY"),
+                event_type="plan_skipped",
+                market_state=str(regime.get("regime") or "UNKNOWN"),
+                regime=str(regime.get("regime") or "UNKNOWN"),
+                alpha_mode=str(alpha.get("mode") or "OFF"),
+                reason=str(gate_reason or ""),
+                confidence=regime.get("confidence"),
+                rr=(plan.get("rr") if isinstance(plan, dict) else None),
+                compliance_ok=True,
+                run_id=run_id,
+                side=(plan.get("side") if isinstance(plan, dict) else None),
+                extra={"source": "orchestrator.plan_skipped"},
+            )
+            _emit(
+                'meta_strategy_bypass',
+                {
+                    'sid': (plan.get('sid') if isinstance(plan, dict) else 'UNKNOWN'),
+                    'symbol': (symbols[0] if symbols else 'SPY'),
+                    'layer': 'meta_strategy',
+                    'reason': 'gate_rejected_upstream',
+                },
+                run_id=run_id,
+            )
+            _emit(
+                'eligibility_bypass',
+                {
+                    'sid': (plan.get('sid') if isinstance(plan, dict) else 'UNKNOWN'),
+                    'symbol': (symbols[0] if symbols else 'SPY'),
+                    'layer': 'eligibility',
+                    'reason': 'gate_rejected_upstream',
+                },
+                run_id=run_id,
+            )
+            _emit(
+                'strategy_health_bypass',
+                {
+                    'sid': (plan.get('sid') if isinstance(plan, dict) else 'UNKNOWN'),
+                    'symbol': (symbols[0] if symbols else 'SPY'),
+                    'layer': 'strategy_health',
+                    'reason': 'gate_rejected_upstream',
+                },
+                run_id=run_id,
+            )
+            _emit(
+                'portfolio_risk_bypass',
+                {
+                    'sid': (plan.get('sid') if isinstance(plan, dict) else 'UNKNOWN'),
+                    'symbol': (symbols[0] if symbols else 'SPY'),
+                    'layer': 'portfolio_risk',
+                    'reason': 'gate_rejected_upstream',
+                },
+                run_id=run_id,
+            )
+            _emit(
+                'risk_ledger_bypass',
+                {
+                    'sid': (plan.get('sid') if isinstance(plan, dict) else 'UNKNOWN'),
+                    'symbol': (symbols[0] if symbols else 'SPY'),
+                    'layer': 'risk_ledger',
+                    'reason': 'gate_rejected_upstream',
+                },
+                run_id=run_id,
+            )
+            if sleep_s > 0:
+                time.sleep(sleep_s)
+            continue
+
+        _emit(
+            "gate_decision",
+            {
+                "decision": "ACCEPT",
+                "reason": "ok",
+                "symbol": plan["symbol"],
+                "sid": plan["sid"],
+                "regime": regime.get("regime"),
+                "bias": core_ctx.get("bias"),
+                "alpha_mode": alpha.get("mode"),
+                "confidence": regime.get("confidence"),
+                "rr": plan.get("rr"),
+                "min_conf": min_conf,
+                "min_rr": min_rr,
+            },
+            run_id=run_id,
+        )
+
+        # === Simple Meta Strategy Engine ===
+        try:
+            meta_engine = _get_meta_engine()
+            if meta_engine is not None:
+                meta_decision = meta_engine.decide(
+                    market_state=regime.get('regime'),
+                    state_confidence=regime.get('confidence'),
+                )
+                _emit(
+                    'meta_strategy_decision',
+                    {
+                        'decision': meta_decision.decision,
+                        'reason': meta_decision.reason,
+                        'market_state': meta_decision.market_state,
+                        'state_confidence': meta_decision.state_confidence,
+                        'active_family': meta_decision.active_family,
+                        'size_mode': meta_decision.size_mode,
+                    },
+                    run_id=run_id,
+                )
+                if str(meta_decision.decision).upper() != 'ENABLE':
+                    _emit(
+                        'plan_skipped',
+                        {
+                            'sid': plan.get('sid'),
+                            'reason': meta_decision.reason,
+                            'layer': 'meta_strategy',
+                            'symbol': symbols[0] if symbols else 'SPY',
+                        },
+                        run_id=run_id,
+                    )
+                    _emit_perf_event(
+                        strategy_id=plan.get('sid'),
+                        symbol=(symbols[0] if symbols else 'SPY'),
+                        event_type='plan_skipped',
+                        market_state=str(regime.get('regime') or 'UNKNOWN'),
+                        regime=str(regime.get('regime') or 'UNKNOWN'),
+                        alpha_mode=str(alpha.get('mode') or 'OFF'),
+                        reason=str(meta_decision.reason or ''),
+                        confidence=regime.get('confidence'),
+                        rr=plan.get('rr'),
+                        compliance_ok=True,
+                        run_id=run_id,
+                        side=plan.get('side'),
+                        extra={'source': 'orchestrator.meta_strategy_block'},
+                    )
+                    continue
+        except Exception as e:
+            _emit('meta_engine_error', {'err': str(e)}, run_id=run_id)
+        
+        # === Strategy Eligibility Layer ===
+        try:
+            from tbot.analytics import StrategyEligibilityEngine
+            if 'elig_engine' not in globals():
+                elig_engine = StrategyEligibilityEngine.from_env()
+        
+            decision = elig_engine.decide(
+                strategy_id=plan.get('sid'),
+                market_state=regime.get('regime'),
+                regime=regime.get('regime'),
+            )
+        
+            _emit(
+                'eligibility_decision',
+                {
+                    'sid': plan.get('sid'),
+                    'eligible': decision.eligible,
+                    'reason': decision.reason,
+                    'market_state': regime.get('regime'),
+                },
+                run_id=run_id,
+            )
+        
+            if not decision.eligible:
+                _emit(
+                    'plan_skipped',
+                    {
+                        'sid': plan.get('sid'),
+                        'reason': decision.reason,
+                        'layer': 'eligibility',
+                        'symbol': symbols[0] if symbols else 'SPY',
+                    },
+                    run_id=run_id,
+                )
+                _emit_perf_event(
+                    strategy_id=plan.get('sid'),
+                    symbol=(symbols[0] if symbols else 'SPY'),
+                    event_type='plan_skipped',
+                    market_state=str(regime.get('regime') or 'UNKNOWN'),
+                    regime=str(regime.get('regime') or 'UNKNOWN'),
+                    alpha_mode=str(alpha.get('mode') or 'OFF'),
+                    reason=str(decision.reason or ''),
+                    confidence=regime.get('confidence'),
+                    rr=plan.get('rr'),
+                    compliance_ok=True,
+                    run_id=run_id,
+                    side=plan.get('side'),
+                    extra={'source': 'orchestrator.eligibility_block'},
+                )
+                continue
+        
+        except Exception as e:
+            _emit('eligibility_error', {'err': str(e)}, run_id=run_id)
+        
+        # === Strategy Health Monitor ===
+        try:
+            health_monitor = _get_health_monitor()
+            if health_monitor is not None:
+                _health_row = _get_health_snapshot_row(
+                    strategy_id=plan.get('sid'),
+                    market_state=regime.get('regime'),
+                    regime_name=regime.get('regime'),
+                )
+                if _health_row is not None:
+                    health_decision = health_monitor.decide(
+                        strategy_id=plan.get('sid'),
+                        recent_trade_count=int(_health_row.get('event_count', 0) or 0),
+                        recent_expectancy_r=float(_health_row.get('expectancy_r', 0.0) or 0.0),
+                        recent_win_rate=float(_health_row.get('win_rate', 0.0) or 0.0),
+                        loss_streak=int(_health_row.get('loss_count', 0) or 0),
+                        compliance_rate=1.0,
+                    )
+                    _emit(
+                        'strategy_health_decision',
+                        {
+                            'strategy_id': plan.get('sid'),
+                            'health_state': health_decision.health_state,
+                            'reason': health_decision.reason,
+                            'health_score': health_decision.health_score,
+                            'recent_trade_count': health_decision.recent_trade_count,
+                            'recent_expectancy_r': health_decision.recent_expectancy_r,
+                            'recent_win_rate': health_decision.recent_win_rate,
+                            'loss_streak_proxy': health_decision.loss_streak,
+                            'compliance_rate': health_decision.compliance_rate,
+                        },
+                        run_id=run_id,
+                    )
+                    if str(health_decision.health_state).upper() == 'COOLDOWN':
+                        _emit(
+                            'plan_skipped',
+                            {
+                                'sid': plan.get('sid'),
+                                'reason': health_decision.reason,
+                                'layer': 'strategy_health',
+                                'symbol': symbols[0] if symbols else 'SPY',
+                            },
+                            run_id=run_id,
+                        )
+                        _emit_perf_event(
+                            strategy_id=plan.get('sid'),
+                            symbol=(symbols[0] if symbols else 'SPY'),
+                            event_type='plan_skipped',
+                            market_state=str(regime.get('regime') or 'UNKNOWN'),
+                            regime=str(regime.get('regime') or 'UNKNOWN'),
+                            alpha_mode=str(alpha.get('mode') or 'OFF'),
+                            reason=str(health_decision.reason or ''),
+                            confidence=regime.get('confidence'),
+                            rr=plan.get('rr'),
+                            compliance_ok=True,
+                            run_id=run_id,
+                            side=plan.get('side'),
+                            extra={'source': 'orchestrator.strategy_health_block', 'proxy_loss_streak': True, 'proxy_compliance_rate': True},
+                        )
+                        continue
+        except Exception as e:
+            _emit('strategy_health_error', {'err': str(e)}, run_id=run_id)
+        
+        # === Portfolio Risk Engine ===
+        try:
+            portfolio_risk_engine = _get_portfolio_risk_engine()
+            if portfolio_risk_engine is not None:
+                _port_inputs = _get_portfolio_budget_inputs()
+                port_decision = portfolio_risk_engine.decide(
+                    total_open_risk_r=float(_port_inputs.get('total_open_risk_r', 0.0) or 0.0),
+                    proposed_risk_r=float(_port_inputs.get('proposed_risk_r', 1.0) or 1.0),
+                    daily_budget_remaining_r=float(_port_inputs.get('daily_budget_remaining_r', 5.0) or 5.0),
+                    weekly_budget_remaining_r=float(_port_inputs.get('weekly_budget_remaining_r', 10.0) or 10.0),
+                )
+                _emit(
+                    'portfolio_risk_decision',
+                    {
+                        'decision': port_decision.decision,
+                        'reason': port_decision.reason,
+                        'total_open_risk_r': port_decision.total_open_risk_r,
+                        'proposed_risk_r': port_decision.proposed_risk_r,
+                        'max_total_risk_r': port_decision.max_total_risk_r,
+                        'max_new_risk_r': port_decision.max_new_risk_r,
+                        'daily_budget_remaining_r': port_decision.daily_budget_remaining_r,
+                        'weekly_budget_remaining_r': port_decision.weekly_budget_remaining_r,
+                    },
+                    run_id=run_id,
+                )
+                if str(port_decision.decision).upper() != 'ALLOW':
+                    _emit(
+                        'plan_skipped',
+                        {
+                            'sid': plan.get('sid'),
+                            'reason': port_decision.reason,
+                            'layer': 'portfolio_risk',
+                            'symbol': symbols[0] if symbols else 'SPY',
+                        },
+                        run_id=run_id,
+                    )
+                    _emit_perf_event(
+                        strategy_id=plan.get('sid'),
+                        symbol=(symbols[0] if symbols else 'SPY'),
+                        event_type='plan_skipped',
+                        market_state=str(regime.get('regime') or 'UNKNOWN'),
+                        regime=str(regime.get('regime') or 'UNKNOWN'),
+                        alpha_mode=str(alpha.get('mode') or 'OFF'),
+                        reason=str(port_decision.reason or ''),
+                        confidence=regime.get('confidence'),
+                        rr=plan.get('rr'),
+                        compliance_ok=True,
+                        run_id=run_id,
+                        side=plan.get('side'),
+                        extra={'source': 'orchestrator.portfolio_risk_block', 'proxy_total_open_risk': True, 'proxy_proposed_risk': True},
+                    )
+                    continue
+        except Exception as e:
+            _emit('portfolio_risk_error', {'err': str(e)}, run_id=run_id)
+        
+        try:
+            sp = _shadow_path()
+            os.makedirs(os.path.dirname(sp), exist_ok=True)
+            with open(sp, 'a', encoding='utf-8') as f:
+                f.write(json.dumps(plan, ensure_ascii=False) + '\n')
+            _emit('plan_created', plan, run_id=run_id)
+            try:
+                _ledger_state = _get_risk_ledger_state(run_id=run_id)
+                _port_inputs_after = _get_portfolio_budget_inputs(run_id=run_id)
+                _reserve_r = float(_port_inputs_after.get('proposed_risk_r', 1.0) or 1.0)
+                ledger = _get_risk_ledger()
+                if ledger is not None and _ledger_state is not None:
+                    _ledger_state = ledger.reserve_risk(_ledger_state, _reserve_r, reason='plan_created_reserve')
+                    if _save_risk_ledger_state(_ledger_state, run_id=run_id):
+                        _emit('risk_ledger_reserved', ledger.snapshot(_ledger_state), run_id=run_id)
+            except Exception as e:
+                _emit('risk_ledger_reserve_error', {'err': str(e)}, run_id=run_id)
+            _emit_perf_event(
+                strategy_id=plan.get('sid'),
+                symbol=plan.get('symbol'),
+                event_type='plan_created',
+                market_state=str(plan.get('regime') or regime.get('regime') or 'UNKNOWN'),
+                regime=str(plan.get('regime') or regime.get('regime') or 'UNKNOWN'),
+                alpha_mode=str(plan.get('alpha_mode') or alpha.get('mode') or 'OFF'),
+                reason=str(plan.get('reason') or ''),
+                confidence=plan.get('confidence'),
+                rr=plan.get('rr'),
+                compliance_ok=True,
+                run_id=run_id,
+                side=plan.get('side'),
+                extra={'source': 'orchestrator.plan_created'},
+            )
+            _emit('shadow_written', {'symbol': plan['symbol'], 'sid': plan['sid'], 'rr': plan['rr']}, run_id=run_id)
+        except BaseException as e:
+            _emit(
+                'shadow_written',
+                {
+                    'error_type': type(e).__name__,
+                    'error': str(e),
+                    'traceback': traceback.format_exc(limit=8),
+                },
+                level='ERROR',
+                run_id=run_id,
+            )
+        if sleep_s > 0:
+            time.sleep(sleep_s)
+
+    shut = {"rc": 0, "iters": iters}
+    print("shutdown", shut, flush=True)
+    _emit("shutdown", shut, run_id=run_id)
+    return 0

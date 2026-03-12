@@ -1,0 +1,266 @@
+# === STAGE8E_FORCE_RUNROOT_BEGIN ===
+$env:RUNROOT = "C:\alpaca-bot\ORG_BOT_UNIFIED\runtime\paper"
+# === STAGE8E_FORCE_RUNROOT_END ===
+param(
+  [string]$ProjectRoot="C:\alpaca-bot\org_bot",
+  [string]$RunRoot="C:\\alpaca-bot\\ORG_BOT_UNIFIED\\runtime\\paper",
+  [string]$IsoDayOverride="",
+  [int]$MaxOrdersPerDay=1,
+  [int]$MaxOrdersPerRun=1,
+  [int]$DefaultQty=1,
+  [int]$DryRun=1
+)
+# ================================
+# STAGE8E_EXEC_WIRING_BEGIN
+# ================================
+
+$STAGE8E_ROOT = "C:\alpaca-bot\ORG_BOT_UNIFIED"
+$STAGE8E_CODE = Join-Path $STAGE8E_ROOT "code"
+$env:PYTHONPATH = $STAGE8E_CODE
+
+function STAGE8E-GetPyExe {
+  param([string]$p)
+  try {
+    if([string]::IsNullOrWhiteSpace($p)){ return $null }
+    $pp = [string]$p
+    if(Test-Path -LiteralPath $pp){ return (Resolve-Path -LiteralPath $pp).Path }
+    return $pp
+  } catch { return $null }
+}
+
+function STAGE8E-CallLedger {
+  param(
+    [Parameter(Mandatory=$true)][ValidateSet('reserve','commit','release')][string]$Action,
+    [Parameter(Mandatory=$true)][string]$Rid,
+    [double]$RiskUsd = 0
+  )
+  try {
+    $PY = Join-Path $STAGE8E_CODE '.venv\Scripts\python.exe'
+    $pyExe = STAGE8E-GetPyExe $PY
+    if([string]::IsNullOrWhiteSpace($pyExe)){ throw ('PY_NOT_FOUND=' + $PY) }
+    $env:RUNROOT = Join-Path $STAGE8E_ROOT 'runtime\paper'
+    $env:RID = $Rid
+    $env:RISK = [string]$RiskUsd
+    $env:ACT = $Action
+
+    $py = @(
+      'import os',
+      'from tbot.runtime.risk_ledger_atomic import reserve_preaccept, commit_after_accept, release_reservation',
+      "rr = os.environ['RUNROOT']",
+      "rid = os.environ['RID']",
+      "risk = float(os.environ.get('RISK','0') or '0')",
+      "act = os.environ['ACT']",
+      "if act=='reserve':",
+      "    print(reserve_preaccept(rr, risk, rid))",
+      "elif act=='commit':",
+      "    print(commit_after_accept(rr, rid))",
+      "elif act=='release':",
+      "    print(release_reservation(rr, rid))",
+      "else:",
+      "    print('bad_action')"
+    ) -join "
+"
+
+    & $pyExe @('-c', $py) 2>&1 | Out-Null
+  } catch {
+    Write-Host ('STAGE8E_LEDGER_ERR=' + $_.Exception.Message)
+  }
+}
+
+# ================================
+# STAGE8E_EXEC_WIRING_END
+# ================================
+
+$ErrorActionPreference="Stop"
+
+# LOAD_SECRETS_PAPER_ENFORCED_V2
+try{
+  $rr2 = $RunRoot
+  if([string]::IsNullOrWhiteSpace($rr2)){
+    try{
+      $p = Join-Path $ProjectRoot 'tools\profiles\paper.profile.json'
+      if(Test-Path $p){
+        $j = Get-Content -Raw -Encoding UTF8 $p | ConvertFrom-Json
+        if($j.runroot){ $rr2=[string]$j.runroot } elseif($j.runtime){ $rr2=[string]$j.runtime }
+      }
+    } catch {}
+  }
+  if([string]::IsNullOrWhiteSpace($rr2)){ $rr2='C:\\alpaca-bot\\ORG_BOT_UNIFIED\\runtime\\paper' }
+  $ldr = Join-Path $ProjectRoot 'tools\secrets\LOAD_PROFILE_SECRETS_V1.ps1'
+  . $ldr -Profile 'PAPER' -ProjectRoot $ProjectRoot -RunRoot $rr2 | Out-Null
+} catch { throw }
+
+# PROFILE_SECRETS_LOAD_V1 (PAPER)
+try{
+  & (Join-Path $ProjectRoot "tools\secrets\LOAD_PROFILE_SECRETS_V1.ps1") -Profile "PAPER" | Out-Null
+}catch{ throw }
+
+# Safety 1: Kill switch
+if(Test-Path (Join-Path $RunRoot "KILL_SWITCH")){
+  "KILL_SWITCH_PRESENT=1"; exit 0
+}
+
+# Safety 2: explicit enable flag file
+$enableFlag = Join-Path $RunRoot "EXECUTE_ENABLED"
+if(!(Test-Path $enableFlag)){
+  "EXECUTE_ENABLED_FLAG=0 (create to enable): $enableFlag"
+  exit 0
+}
+
+# Safety 3: market hours gate (US/Eastern) Mon-Fri, 09:35-15:55
+try {
+  $tz = [System.TimeZoneInfo]::FindSystemTimeZoneById("Eastern Standard Time")
+  $nowET = [System.TimeZoneInfo]::ConvertTimeFromUtc([DateTime]::UtcNow, $tz)
+} catch {
+  $nowET = Get-Date
+}
+if(($nowET.DayOfWeek -eq "Saturday") -or ($nowET.DayOfWeek -eq "Sunday")){
+  "OUT_OF_SESSION=1 (weekend)"; exit 0
+}
+$start = Get-Date -Date $nowET.Date.AddHours(9).AddMinutes(35)
+$end   = Get-Date -Date $nowET.Date.AddHours(15).AddMinutes(55)
+if(($nowET -lt $start) -or ($nowET -gt $end)){
+  "OUT_OF_SESSION=1 nowET=$($nowET.ToString("s"))"; exit 0
+}
+
+# Load secrets from profile if needed (no printing)
+if([string]::IsNullOrWhiteSpace(([string]$env:APCA_API_KEY_ID).Trim())){
+  $prof = Get-Content -Raw -Encoding UTF8 (Join-Path $ProjectRoot "tools\profiles\paper.profile.json") | ConvertFrom-Json
+  $sec = [string]$prof.secrets_ps1
+  if($sec -and (Test-Path $sec)){ . $sec }
+}
+
+. (Join-Path $ProjectRoot "tools\paper\ALPACA_PAPER_REST_V1.ps1")
+
+$ops = Join-Path $RunRoot "logs\ops"
+$ana = Join-Path $RunRoot "logs\analytics"
+$led = Join-Path $RunRoot "logs\ledger"
+$state = Join-Path $RunRoot "state\paper_exec"
+New-Item -ItemType Directory -Force -Path $ops,$ana,$led,$state | Out-Null
+
+# Determine ISO day from LIVE_OUT filename if possible
+if([string]::IsNullOrWhiteSpace($IsoDayOverride)){
+  $lo = Get-ChildItem -Path $ops -Filter "LIVE_OUT_*.txt" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+  if($lo){
+    $m=[regex]::Match($lo.Name,"^LIVE_OUT_(\d{4})(\d{2})(\d{2})")
+    if($m.Success){ $IsoDayOverride = "{0}-{1}-{2}" -f $m.Groups[1].Value,$m.Groups[2].Value,$m.Groups[3].Value }
+  }
+  if([string]::IsNullOrWhiteSpace($IsoDayOverride)){ $IsoDayOverride=(Get-Date).ToString("yyyy-MM-dd") }
+}
+$ymd = $IsoDayOverride.Replace("-","")
+
+# CONFIG_GATES_EXEC_V1
+& "C:\Program Files\PowerShell\7\pwsh.exe" -NoProfile -ExecutionPolicy Bypass -File "C:\alpaca-bot\org_bot\tools\ops\VALIDATE_PAPER_CONFIG_GATES_V1.ps1" -ProjectRoot "C:\alpaca-bot\org_bot" -RunRoot "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\runtime\\paper" -IsoDayOverride $IsoDayOverride
+if($LASTEXITCODE -ne 0){ "CONFIG_GATES_FAIL=1 (no execute)"; exit 0 }
+
+# Daily cap tracking
+$countFile = Join-Path $state ("exec_count_{0}.txt" -f $ymd)
+$done=0
+if(Test-Path $countFile){
+  try { $done = [int](Get-Content -Raw $countFile) } catch { $done=0 }
+}
+if($done -ge $MaxOrdersPerDay){
+  "DAILY_CAP_REACHED=1 done=$done cap=$MaxOrdersPerDay"; exit 0
+}
+
+$selPath = Join-Path $ana ("PLAN_SELECTION_{0}.json" -f $ymd)
+if(!(Test-Path $selPath)){ "NO_SELECTION_FILE=$selPath"; exit 0 }
+
+$sel = Get-Content -Raw -Encoding UTF8 $selPath | ConvertFrom-Json
+$selected = @($sel.selected)
+if($selected.Count -eq 0){ "SELECTION_EMPTY=1"; exit 0 }
+
+$ledgerPath = Join-Path $led ("LEDGER_REAL_{0}.jsonl" -f $ymd)
+
+# Existing client IDs to avoid duplicates
+$existing=@{}
+if(Test-Path $ledgerPath){
+  Get-Content $ledgerPath -ErrorAction SilentlyContinue | ForEach-Object {
+    try{ $o = $_ | ConvertFrom-Json; if($o.client_order_id){ $existing[$o.client_order_id]=1 } } catch {}
+  }
+}
+
+$submitted=0; $skipped=0; $errors=0
+$ts=(Get-Date).ToString("s")
+
+foreach($i in 0..($selected.Count-1)){
+  if($submitted -ge $MaxOrdersPerRun){ break }
+  if(($done + $submitted) -ge $MaxOrdersPerDay){ break }
+
+  $c=$selected[$i]
+  $sym=[string]$c.sym
+  if([string]::IsNullOrWhiteSpace($sym)){ $skipped++; continue }
+
+  $sideRaw=([string]$c.side).ToLowerInvariant()
+  $side="buy"
+  if($sideRaw -match "sell|short"){ $side="sell" }
+
+  $clientId = ("TBOT-PAPER-{0}-{1}-{2}-{3}" -f $ymd,$i,$sym,$side)
+  if($existing.ContainsKey($clientId)){ $skipped++; continue }
+
+  @{ ts=$ts; kind="order_intent"; isoday=$IsoDayOverride; sym=$sym; side=$side; qty=$DefaultQty; client_order_id=$clientId; dry_run=$DryRun } |
+    ConvertTo-Json -Compress | Add-Content -Encoding UTF8 -Path $ledgerPath
+
+  if($DryRun -eq 1){
+    $submitted++
+    @{ ts=$ts; kind="dryrun_skip_submit"; isoday=$IsoDayOverride; sym=$sym; side=$side; qty=$DefaultQty; client_order_id=$clientId } |
+# === STAGE8E_RELEASE_ON_DRYRUN BEGIN ===
+try {
+  if($planObj -and ($planObj.PSObject.Properties.Name -contains 'risk_rid')){
+    $rid = [string]$planObj.risk_rid
+    if(-not [string]::IsNullOrWhiteSpace($rid)){
+      STAGE8E-CallLedger -Action 'release' -Rid $rid | Out-Null
+    }
+  }
+} catch {}
+# === STAGE8E_RELEASE_ON_DRYRUN END ===
+      ConvertTo-Json -Compress | Add-Content -Encoding UTF8 -Path $ledgerPath
+    $existing[$clientId]=1
+    continue
+  }
+
+  try {
+    $o = Submit-ApcaOrder -Symbol $sym -Qty $DefaultQty -Side $side -Type "market" -TIF "day" -ClientOrderId $clientId
+    $submitted++
+    @{ ts=$ts; kind="order_submitted"; isoday=$IsoDayOverride; sym=$sym; side=$side; qty=$DefaultQty; client_order_id=$clientId; order_id=$o.id; status=$o.status } |
+# === STAGE8E_COMMIT_AFTER_SUBMIT BEGIN ===
+try {
+  if($planObj -and ($planObj.PSObject.Properties.Name -contains 'risk_rid')){
+    $rid = [string]$planObj.risk_rid
+    if(-not [string]::IsNullOrWhiteSpace($rid)){
+      STAGE8E-CallLedger -Action 'commit' -Rid $rid | Out-Null
+    }
+  }
+} catch {}
+# === STAGE8E_COMMIT_AFTER_SUBMIT END ===
+      ConvertTo-Json -Compress | Add-Content -Encoding UTF8 -Path $ledgerPath
+    $existing[$clientId]=1
+  } catch {
+    $errors++
+    @{ ts=$ts; kind="order_error"; isoday=$IsoDayOverride; sym=$sym; side=$side; qty=$DefaultQty; client_order_id=$clientId; err=$_.Exception.Message } |
+# === STAGE8E_RELEASE_ON_ERROR BEGIN ===
+try {
+  if($planObj -and ($planObj.PSObject.Properties.Name -contains 'risk_rid')){
+    $rid = [string]$planObj.risk_rid
+    if(-not [string]::IsNullOrWhiteSpace($rid)){
+      STAGE8E-CallLedger -Action 'release' -Rid $rid | Out-Null
+    }
+  }
+} catch {}
+# === STAGE8E_RELEASE_ON_ERROR END ===
+      ConvertTo-Json -Compress | Add-Content -Encoding UTF8 -Path $ledgerPath
+  }
+}
+
+$done2 = $done + $submitted
+Set-Content -Encoding UTF8 -Path $countFile -Value $done2
+
+"ISO_DAY_USED=$IsoDayOverride"
+"DRYRUN=$DryRun"
+"SUBMITTED=$submitted SKIPPED=$skipped ERRORS=$errors DONE_TODAY=$done2 CAP=$MaxOrdersPerDay"
+"LEDGER_REAL=$ledgerPath"
+"OK=EXECUTE_PLAN_SELECTION_PAPER_V2_DONE"
+
+
+
+

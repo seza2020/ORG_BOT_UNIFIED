@@ -1,0 +1,192 @@
+from __future__ import annotations
+
+import argparse
+import atexit
+import json
+import os
+import sys
+import time
+import traceback
+from pathlib import Path
+
+ROOT = Path(r"C:\alpaca-bot\ORG_BOT_UNIFIED")
+RUNROOT = Path(os.environ.get("TBOT_RUNROOT", str(ROOT / r"runtime\paper")))
+LOGDIR = RUNROOT / "logs"
+LOCKDIR = RUNROOT / "state" / "locks"
+OBSFILE = LOGDIR / "dualpid_fix_events.jsonl"
+LOCKFILE = LOCKDIR / "tbot_main_owner.lock"
+
+_MUTEX_HANDLE = None
+_LOCK_OWNER = False
+
+def _emit(kind: str, **payload) -> None:
+    try:
+        LOGDIR.mkdir(parents=True, exist_ok=True)
+        row = {
+            "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "kind": kind,
+            "pid": os.getpid(),
+            "ppid": os.getppid(),
+            "argv": sys.argv,
+            "payload": payload,
+        }
+        with open(OBSFILE, "a", encoding="utf-8") as f:
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+    except Exception:
+        pass
+
+def _is_run_mode() -> bool:
+    return "--run" in sys.argv
+
+def _parent_image() -> str:
+    if os.name != "nt":
+        return ""
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+        OpenProcess = ctypes.windll.kernel32.OpenProcess
+        CloseHandle = ctypes.windll.kernel32.CloseHandle
+        QueryFullProcessImageNameW = ctypes.windll.kernel32.QueryFullProcessImageNameW
+
+        OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+        OpenProcess.restype = wintypes.HANDLE
+        CloseHandle.argtypes = [wintypes.HANDLE]
+        CloseHandle.restype = wintypes.BOOL
+        QueryFullProcessImageNameW.argtypes = [wintypes.HANDLE, wintypes.DWORD, wintypes.LPWSTR, ctypes.POINTER(wintypes.DWORD)]
+        QueryFullProcessImageNameW.restype = wintypes.BOOL
+
+        h = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, os.getppid())
+        if not h:
+            return ""
+        try:
+            size = wintypes.DWORD(32768)
+            buf = ctypes.create_unicode_buffer(size.value)
+            ok = QueryFullProcessImageNameW(h, 0, buf, ctypes.byref(size))
+            return buf.value if ok else ""
+        finally:
+            CloseHandle(h)
+    except Exception:
+        return ""
+
+def _is_child_reentry() -> bool:
+    if not _is_run_mode():
+        return False
+    argv0 = Path(sys.argv[0]).name.lower() if sys.argv else ""
+    parent_img = (_parent_image() or "").lower()
+
+    # Only kill the pathological child, not the primary runtime.
+    # Expected child signature in this incident:
+    # - argv0 resolves to main.py
+    # - parent executable is python.exe
+    # - current process is NOT manager-owned
+    return (
+        argv0 == "main.py" and
+        parent_img.endswith("\\python.exe") and
+        os.environ.get("TBOT_RUNTIME_MANAGER", "0") != "1"
+    )
+
+def _install_single_owner_guard() -> None:
+    global _MUTEX_HANDLE, _LOCK_OWNER
+
+    if not _is_run_mode():
+        _emit("guard_skip_not_run_mode")
+        return
+
+    if _is_child_reentry():
+        _emit("child_reentry_block")
+        raise SystemExit(0)
+
+    LOCKDIR.mkdir(parents=True, exist_ok=True)
+
+    if os.name == "nt":
+        try:
+            import ctypes
+            from ctypes import wintypes
+            CreateMutexW = ctypes.windll.kernel32.CreateMutexW
+            GetLastError = ctypes.windll.kernel32.GetLastError
+            CreateMutexW.argtypes = [wintypes.LPVOID, wintypes.BOOL, wintypes.LPCWSTR]
+            CreateMutexW.restype = wintypes.HANDLE
+            h = CreateMutexW(None, True, r"Global\ORG_BOT_UNIFIED_TBOT_MAIN_OWNER")
+            if h and GetLastError() == 183:
+                _emit("mutex_exists_block")
+                raise SystemExit(0)
+            _MUTEX_HANDLE = h
+            _emit("mutex_acquired")
+        except SystemExit:
+            raise
+        except Exception as e:
+            _emit("mutex_warn_fail_open", error=repr(e))
+
+    try:
+        fd = os.open(str(LOCKFILE), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        try:
+            os.write(fd, f"pid={os.getpid()}\nppid={os.getppid()}\n".encode("utf-8"))
+        finally:
+            os.close(fd)
+        _LOCK_OWNER = True
+        _emit("lockfile_created", lockfile=str(LOCKFILE))
+    except FileExistsError:
+        _emit("lockfile_exists_block", lockfile=str(LOCKFILE))
+        raise SystemExit(0)
+
+def _cleanup() -> None:
+    try:
+        if _LOCK_OWNER and LOCKFILE.exists():
+            txt = LOCKFILE.read_text(encoding="utf-8", errors="ignore")
+            if f"pid={os.getpid()}" in txt:
+                LOCKFILE.unlink(missing_ok=True)
+                _emit("lockfile_removed")
+    except Exception as e:
+        _emit("cleanup_warn", error=repr(e))
+
+atexit.register(_cleanup)
+
+def build_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(prog="tbot.main", description="ORG_BOT_UNIFIED Runtime")
+    p.add_argument("--smoke", action="store_true")
+    p.add_argument("--run", action="store_true")
+    p.add_argument("--iters", type=int, default=999999)
+    p.add_argument("--sleep", type=float, default=0.5)
+    return p
+
+def smoke() -> int:
+    print("TBOT_SMOKE_OK")
+    print("CWD=", os.getcwd())
+    print("PYTHONPATH=", os.environ.get("PYTHONPATH"))
+    print("TBOT_RUNROOT=", os.environ.get("TBOT_RUNROOT"))
+    print("SYS_EXEC=", sys.executable)
+    return 0
+
+def main(argv: list[str] | None = None) -> int:
+    _install_single_owner_guard()
+
+    parser = build_parser()
+    args = parser.parse_args(argv)
+
+    if args.smoke:
+        _emit("smoke")
+        return smoke()
+
+    if not args.run:
+        parser.print_help()
+        _emit("help_exit")
+        return 0
+
+    _emit("run_loop_enter")
+    from tbot.runtime.orchestrator import run_loop
+    rc = run_loop(args)
+    _emit("run_loop_exit", rc=0 if rc is None else rc)
+    return 0 if rc is None else int(rc)
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
+    except SystemExit:
+        raise
+    except Exception:
+        _emit("fatal_exception", error=traceback.format_exc())
+        print("TBOT_FATAL_EXCEPTION", flush=True)
+        traceback.print_exc()
+        raise SystemExit(1)

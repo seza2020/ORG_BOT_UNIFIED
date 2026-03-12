@@ -1,0 +1,8 @@
+$ErrorActionPreference='Continue'
+$LOG='C:\alpaca-bot\ORG_BOT_UNIFIED\runtime\paper\logs\supervisor_runner.log'
+Add-Content -Encoding UTF8 -Path $LOG -Value ("==== RUNNER "+(Get-Date)+" ====")
+try{
+  pwsh -NoProfile -ExecutionPolicy Bypass -File "C:\alpaca-bot\ORG_BOT_UNIFIED\ops\tasks\TBOT_SUPERVISOR_PAPER_V3.ps1" 2>&1 | Tee-Object -FilePath $LOG -Append
+}catch{
+  Add-Content -Encoding UTF8 -Path $LOG -Value ("RUNNER_ERR: "+$_.Exception.Message)
+}

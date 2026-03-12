@@ -1,0 +1,17 @@
+{
+  "profile_version": 1,
+  "mode": "PAPER_WARMUP",
+  "active_model": "C_SELECTIVE_WARMUP",
+  "confidence_threshold": 0.3,
+  "min_rr": 1.5,
+  "max_plans_per_day": 10,
+  "cooldown_seconds": 180,
+  "risk_per_trade_r": 0.5,
+  "daily_kill_r": -1.5,
+  "alpha_policy": "ALLOW_ON_AND_CAP50",
+  "production_reference_conf": 0.35,
+  "warmup_end_trade_target": 40,
+  "warmup_end_day_target": 10,
+  "status": "APPROVED_FOR_PAPER_WARMUP",
+  "notes": "Controlled institutional warmup mode for data acquisition and starvation reduction."
+}

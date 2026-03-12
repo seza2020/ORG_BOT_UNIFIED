@@ -1,0 +1,38 @@
+from __future__ import annotations
+
+import sys
+import traceback
+
+def _block_non_main_process() -> None:
+    try:
+        import multiprocessing as mp
+        if mp.current_process().name != "MainProcess":
+            sys.stderr.write(
+                f"[SPAWN_BLOCK] non-main process name={mp.current_process().name} -> exit 86\n"
+            )
+            raise SystemExit(86)
+    except Exception:
+        return
+
+def _run() -> int:
+    from tbot.runtime.single_instance import enforce_single_instance
+    enforce_single_instance()
+
+    # Canonical entry import
+    from tbot.entry import entrypoint
+
+    return int(entrypoint())
+
+def main() -> int:
+    _block_non_main_process()
+    try:
+        return _run()
+    except SystemExit:
+        raise
+    except Exception as e:
+        sys.stderr.write(f"[FATAL_MAIN_EXCEPTION] {repr(e)}\n")
+        traceback.print_exc()
+        return 1
+
+if __name__ == "__main__":
+    sys.exit(main())

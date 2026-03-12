@@ -1,0 +1,78 @@
+
+from __future__ import annotations
+import argparse
+import os
+import sys
+import traceback
+
+BANNER = "TBOT Trading Runtime (Enterprise CLI)"
+
+
+def build_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(prog="tbot.main", description=BANNER)
+    p.add_argument("--smoke", action="store_true", help="print identity/session info and exit 0")
+    p.add_argument("--run", action="store_true", help="run orchestrator loop")
+    p.add_argument("--iters", type=int, default=999999, help="max iterations")
+    p.add_argument("--sleep", type=float, default=0.5, help="sleep seconds")
+    return p
+
+
+def smoke() -> int:
+    print("TBOT_SMOKE_OK")
+    print("CWD=", os.getcwd())
+    print("PYTHONPATH=", os.environ.get("PYTHONPATH"))
+    print("TBOT_RUNROOT=", os.environ.get("TBOT_RUNROOT"))
+    print("SYS_EXEC=", sys.executable)
+    return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    # ==== TBOT_SINGLE_INSTANCE_MUTEX_V3C BEGIN ====
+    # Windows Named Mutex - single instance. ExitCode 86 if already running.
+    try:
+        import ctypes
+        _CreateMutexW = ctypes.windll.kernel32.CreateMutexW
+        _GetLastError = ctypes.windll.kernel32.GetLastError
+        _name = r"Global\TBOT_MAIN_RUNTIME"
+        _h = _CreateMutexW(None, False, _name)
+        if _GetLastError() == 183:
+            print("TBOT_SINGLE_INSTANCE_BLOCKED_MUTEX", _name)
+            raise SystemExit(86)
+        # keep handle referenced
+        _tbot_mutex_handle = _h
+    except SystemExit:
+        raise
+    except Exception as _e:
+        print("TBOT_MUTEX_ERROR", repr(_e))
+        raise SystemExit(86)
+    # ==== TBOT_SINGLE_INSTANCE_MUTEX_V3C END ====
+
+    
+parser = build_parser()
+    args = parser.parse_args(argv)
+
+    if args.smoke:
+        return smoke()
+
+    if not args.run:
+        parser.print_help()
+        return 0
+
+    # run loop
+    from tbot.runtime.orchestrator import run_loop
+    run_loop(args)
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        rc = main()
+        raise SystemExit(rc)
+    except SystemExit:
+        raise
+    except Exception:
+        print("TBOT_FATAL_EXCEPTION")
+        traceback.print_exc()
+        raise SystemExit(1)
+
+

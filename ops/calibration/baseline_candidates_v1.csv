@@ -1,0 +1,6 @@
+"rank","confidence_threshold","role","model","status","rationale"
+"1","0.35","PRIMARY","C_SELECTIVE","APPROVED_FOR_PAPER","best_balance_between_sample_confidence_and_selectivity"
+"2","0.4","BACKUP_CONSERVATIVE","C_SELECTIVE","APPROVED_FOR_PAPER_COMPARISON","tighter_than_primary_with_still_usable_sample"
+"3","0.45","EXPLORATORY_SELECTIVE","C_SELECTIVE","APPROVED_FOR_LIMITED_COMPARISON","highest_selectivity_but_lower_sample"
+"4","0.3","REJECTED","C_SELECTIVE","NOT_APPROVED","too_permissive_accept_rate_too_high"
+"5","0.6","REJECTED","C_SELECTIVE","NOT_APPROVED","too_restrictive_sample_too_low_for_baseline"

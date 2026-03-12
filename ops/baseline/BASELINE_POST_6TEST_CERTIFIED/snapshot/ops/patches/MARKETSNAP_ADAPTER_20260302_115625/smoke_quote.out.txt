@@ -1,0 +1,1 @@
+QUOTE_STD: {'symbol': 'SPY', 'last': 688.41, 'bid': None, 'ask': None, 'mid': 688.41, 'vwap': 686.730008, 'ema_fast': 686.5158853838507, 'ema_slow': 686.6194878291321, 'bar_index': 239, 'ts': None}

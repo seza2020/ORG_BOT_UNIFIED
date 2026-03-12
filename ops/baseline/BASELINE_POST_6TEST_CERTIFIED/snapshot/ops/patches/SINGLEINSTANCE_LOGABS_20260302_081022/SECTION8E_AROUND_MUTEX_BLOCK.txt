@@ -1,0 +1,161 @@
+    except Exception:
+        return rec
+
+# File: tbot/main.py
+
+import argparse
+import os
+import sys
+from typing import Optional
+# --- CHILD_FAIL_CLOSED_V2 BEGIN ---
+# Hard fail if this process is spawned by another tbot.main python
+try:
+    import os as _os
+    import sys as _sys
+    _ppid = _os.getppid()
+    _is_child = False
+    try:
+        # Windows: inspect parent command line via environment snapshot
+        import subprocess as _sp
+        _cmd = _sp.check_output(
+            ["wmic","process","where",f"ProcessId={_ppid}","get","CommandLine","/value"],
+            stderr=_sp.DEVNULL
+        ).decode(errors="ignore")
+        if "tbot.main" in _cmd and "python" in _cmd.lower():
+            _is_child = True
+    except Exception:
+        pass
+
+    if _is_child:
+        raise SystemExit(97)
+except SystemExit:
+    raise
+except Exception:
+    # fail closed
+    raise
+# --- CHILD_FAIL_CLOSED_V2 END ---
+
+from tbot.config import load_config
+
+# --- SINGLE_INSTANCE_GUARD_V2 BEGIN ---
+# Enforce single instance (fail-closed) + trace any self-spawn attempts.
+try:
+    import os as _si_os
+    import sys as _si_sys
+    import ctypes as _si_ct
+    import traceback as _si_tb
+    import time as _si_time
+    import pathlib as _si_pl
+
+    _rr = (_si_os.getenv('TBOT_RUNROOT') or '').strip()
+    _locks = None
+    try:
+        if _rr:
+            _locks = _si_pl.Path(_rr) / 'state' / 'locks'
+            _locks.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        _locks = None
+
+    def _si_write(name: str, text: str) -> None:
+        try:
+            if _locks:
+                (_locks / name).write_text(text, encoding='utf-8')
+        except Exception:
+            pass
+
+    # Two-layer mutex:
+    # 1) Global constant (blocks even if child has no TBOT_RUNROOT)
+    # 2) RunRoot-specific (extra safety, audit clarity)
+    def _mk_mutex(s: str) -> str:
+        s = (s or '').replace('\\\\','_').replace(':','')
+        if len(s) > 80: s = s[-80:]
+        return f'Global\\\\TBOT_MAIN_{s}'
+
+    _m1 = _mk_mutex('GLOBAL')
+    _m2 = _mk_mutex(_rr if _rr else 'NO_RUNROOT')
+
+    def _acquire(m: str) -> None:
+        h = _si_ct.windll.kernel32.CreateMutexW(None, True, m)  # initial owner (fail-closed)
+        if not h:
+            err = _si_ct.windll.kernel32.GetLastError()
+            _si_write('PY_MAIN_MUTEX_FAIL.txt', f'pid={_si_os.getpid()} ppid={_si_os.getppid()} mutex={m} err={err} argv={_si_sys.argv}\n')
+            raise SystemExit(99)        err = _si_ct.windll.kernel32.GetLastError()
+        if err == 183:  # ERROR_ALREADY_EXISTS
+            _si_write('PY_MAIN_DUPLICATE_BLOCKED.txt', f'pid={_si_os.getpid()} ppid={_si_os.getppid()} mutex={m} argv={_si_sys.argv}\\n')
+            raise SystemExit(98)
+
+    _acquire(_m1)
+    _acquire(_m2)
+    _si_write('PY_MAIN_MUTEX_OK.txt', f'pid={_si_os.getpid()} ppid={_si_os.getppid()} m1={_m1} m2={_m2} argv={_si_sys.argv}\\n')
+
+    # --- Spawn tracing hooks (root-cause evidence) ---
+    import subprocess as _si_sp
+    _orig_popen = _si_sp.Popen
+    def _popen_wrapped(*a, **k):
+        try:
+            cmd = k.get('args', None)
+            if cmd is None and len(a) > 0: cmd = a[0]
+            _si_write(f'PROC_SPAWN_{int(_si_time.time())}.txt',
+                      'Popen called\\n' + f'cmd={cmd}\\n' + 'argv=' + str(_si_sys.argv) + '\\n\\n' + ''.join(_si_tb.format_stack(limit=80)))
+        except Exception:
+            pass
+        return _orig_popen(*a, **k)
+    _si_sp.Popen = _popen_wrapped
+
+    # os.exec* hooks
+    _orig_execv = getattr(_si_os, 'execv', None)
+    if _orig_execv:
+        def _execv_wrapped(path, args):
+            _si_write(f'PROC_EXECV_{int(_si_time.time())}.txt', f'execv path={path} args={args}\\n\\n' + ''.join(_si_tb.format_stack(limit=80)))
+            return _orig_execv(path, args)
+        _si_os.execv = _execv_wrapped
+
+    _orig_execve = getattr(_si_os, 'execve', None)
+    if _orig_execve:
+        def _execve_wrapped(path, args, env):
+            _si_write(f'PROC_EXECVE_{int(_si_time.time())}.txt', f'execve path={path} args={args}\\n\\n' + ''.join(_si_tb.format_stack(limit=80)))
+            return _orig_execve(path, args, env)
+        _si_os.execve = _execve_wrapped
+
+    # os.spawn* hooks (if available)
+    _orig_spawnv = getattr(_si_os, 'spawnv', None)
+    if _orig_spawnv:
+        def _spawnv_wrapped(mode, path, args):
+            _si_write(f'PROC_SPAWNV_{int(_si_time.time())}.txt', f'spawnv mode={mode} path={path} args={args}\\n\\n' + ''.join(_si_tb.format_stack(limit=80)))
+            return _orig_spawnv(mode, path, args)
+        _si_os.spawnv = _spawnv_wrapped
+
+except SystemExit:
+    raise
+except Exception:
+    # fail-closed
+    raise
+# --- SINGLE_INSTANCE_GUARD_V2 END ---
+
+
+# --- TOP_MUTEX_GUARD_V1 BEGIN ---
+# Enforce single instance at TOP-OF-FILE (fail-closed).
+try:
+    import os as _tg_os
+    import sys as _tg_sys
+    import ctypes as _tg_ct
+    _rr = (_tg_os.getenv('TBOT_RUNROOT') or '').strip()
+    _key = (_rr if _rr else 'NO_RUNROOT').replace('\\', '_').replace(':','')
+    if len(_key) > 80: _key = _key[-80:]
+    _mutex = f'Global\\\\TBOT_MAIN_{_key}'
+    _h = _tg_ct.windll.kernel32.CreateMutexW(None, False, _mutex)
+    _err = _tg_ct.windll.kernel32.GetLastError()
+    if _err == 183:
+        # Breadcrumb for forensics
+        try:
+            if _rr:
+                import pathlib as _tg_pl
+                _ld = _tg_pl.Path(_rr) / 'state' / 'locks'
+                _ld.mkdir(parents=True, exist_ok=True)
+                (_ld / 'PY_MAIN_DUPLICATE_BLOCKED.txt').write_text(
+                    f'pid={_tg_os.getpid()} ppid={_tg_os.getppid()} mutex={_mutex} argv={_tg_sys.argv}\\n', encoding='utf-8'
+                )
+        except Exception:
+            pass
+        raise SystemExit(98)
+except SystemExit:

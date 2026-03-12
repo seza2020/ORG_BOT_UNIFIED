@@ -1,0 +1,68 @@
+$ErrorActionPreference = 'Continue'
+
+$ROOT = 'C:\alpaca-bot\ORG_BOT_UNIFIED'
+$CODE = 'C:\alpaca-bot\ORG_BOT_UNIFIED\code'
+$RUNROOT = 'C:\alpaca-bot\ORG_BOT_UNIFIED\runtime\paper'
+$PY = 'C:\alpaca-bot\ORG_BOT_UNIFIED\code\.venv\Scripts\python.exe'
+
+$LOGDIR = Join-Path $RUNROOT 'logs'
+New-Item -ItemType Directory -Force $LOGDIR | Out-Null
+
+$EV = Join-Path $LOGDIR 'supervisor_events.jsonl'
+$RUNNER_LOG = Join-Path $LOGDIR 'supervisor_runner.log'
+
+function _j([hashtable]$h){
+  ($h | ConvertTo-Json -Compress -Depth 8)
+}
+
+function _emit([string]$kind, [hashtable]$extra){
+  try{
+    $o = @{ ts = (Get-Date).ToString('s'); kind = $kind; runroot = $RUNROOT; root = $ROOT }
+    if($extra){ foreach($k in $extra.Keys){ $o[$k]=$extra[$k] } }
+    Add-Content -LiteralPath $EV -Value (_j $o)
+  } catch {}
+}
+
+# bind env for child processes
+$env:TBOT_PROFILE='paper'
+$env:TBOT_RUNROOT=$RUNROOT
+$env:PYTHONPATH=$CODE
+
+_emit 'boot' @{ py = $PY }
+
+# quick validation
+if(!(Test-Path -LiteralPath $PY)){
+  _emit 'error' @{ reason='PY_NOT_FOUND'; path=$PY }
+  exit 1
+}
+
+# supervisor loop
+while($true){
+  try{
+    # find any running tbot.main under our unified root
+    $p = Get-CimInstance Win32_Process -Filter "Name='python.exe'" -ErrorAction SilentlyContinue |
+          Where-Object { ($_.CommandLine -match 'tbot\.main') -and ($_.CommandLine -match [regex]::Escape($CODE)) } |
+          Select-Object -First 1
+
+    if(-not $p){
+      _emit 'bot_start' @{ cmd = 'python -X faulthandler -u -m tbot.main --run --iters 999999 --sleep 0.5' }
+
+      try{
+        Start-Process -FilePath $PY -WorkingDirectory $CODE -ArgumentList @(
+          '-X','faulthandler','-u','-m','tbot.main','--run','--iters','999999','--sleep','0.5'
+        ) | Out-Null
+      } catch {
+        _emit 'bot_start_failed' @{ err = ($_.Exception.Message) }
+      }
+    } else {
+      _emit 'bot_alive' @{ pid = $p.ProcessId }
+    }
+
+    _emit 'heartbeat' @{ }
+
+  } catch {
+    _emit 'loop_error' @{ err = ($_.Exception.Message) }
+  }
+
+  Start-Sleep -Seconds 60
+}

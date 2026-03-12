@@ -1,0 +1,43 @@
+import sys
+import traceback
+
+from tbot.runtime.orchestrator import run_loop
+from tbot.runtime.single_instance import acquire_single_instance_or_exit
+from tbot.runtime.args import build_parser
+from tbot.runtime.smoke import smoke
+
+
+def main():
+
+    args = build_parser().parse_args()
+
+    if getattr(args,"smoke",False):
+        smoke()
+        return 0
+
+    acquire_single_instance_or_exit()
+
+    try:
+
+        rc = run_loop(args)
+
+        if rc is None:
+            rc = 0
+
+        return rc
+
+    except SystemExit:
+        raise
+
+    except Exception:
+
+        traceback.print_exc()
+
+        return 1
+
+
+if __name__ == "__main__":
+
+    rc = main()
+
+    sys.exit(rc)

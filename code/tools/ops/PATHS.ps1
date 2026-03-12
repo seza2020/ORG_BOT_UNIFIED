@@ -1,0 +1,52 @@
+# PATHS.ps1  (single source of truth for paths)
+# Usage:
+#   . (Join-Path $PSScriptRoot "PATHS.ps1")
+#   $P = Get-Paths
+#   $P.RunRootPaper
+
+Set-StrictMode -Version Latest
+
+function Get-Paths {
+  param(
+    [string]$Base = "C:\alpaca-bot",
+    [string]$Root = "C:\alpaca-bot\ORG_BOT_UNIFIED\code",
+    [string]$RunRootPaper = "C:\alpaca-bot\ORG_BOT_UNIFIED\runtime\paper"
+  )
+
+  $p = [ordered]@{}
+
+  $p.Base = $Base
+  $p.Root = $Root
+  $p.OpsDir = Join-Path $Root "tools\ops"
+
+  $p.RunRootPaper = $RunRootPaper
+
+  # Paper subpaths
+  $p.PaperState   = Join-Path $RunRootPaper "state"
+  $p.PaperLocks   = Join-Path $p.PaperState "locks"
+  $p.PaperLock    = Join-Path $p.PaperLocks "RUN_PAPER_PROFILE.lock"
+  $p.PaperPidFile = Join-Path $p.PaperState "pid.txt"
+  $p.PaperHb      = Join-Path $p.PaperState "heartbeat.json"
+  $p.PaperHbErr   = Join-Path $p.PaperState "heartbeat_err.txt"
+
+  $p.PaperLogs    = Join-Path $RunRootPaper "logs"
+  $p.PaperOpsLogs = Join-Path $p.PaperLogs "ops"
+  $p.PaperMeta    = Join-Path $p.PaperLogs "meta.jsonl"
+  $p.PaperAnn     = Join-Path $p.PaperLogs "announce.log"
+  $p.PaperTrades  = Join-Path $p.PaperLogs "trades"
+  $p.PaperShadow  = Join-Path $p.PaperLogs "shadow_plans.jsonl"
+
+  # Common executables
+  $p.Py = Join-Path $Root ".venv\Scripts\python.exe"
+  $p.Pwsh = "C:\Program Files\PowerShell\7\pwsh.exe"
+
+  # Local API
+  $p.LocalApiDir = Join-Path $Root "tools\local_api"
+  $p.LocalApiApp = "tools.local_api.main:app"
+  $p.LocalApiHost= "127.0.0.1"
+  $p.LocalApiPort= 8008
+  $p.LocalApiUrl = "http://127.0.0.1:8008"
+
+  return [pscustomobject]$p
+}
+

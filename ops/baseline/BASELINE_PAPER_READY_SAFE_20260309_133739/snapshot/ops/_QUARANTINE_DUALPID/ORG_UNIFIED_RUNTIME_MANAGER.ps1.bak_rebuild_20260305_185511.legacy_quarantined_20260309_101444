@@ -1,0 +1,157 @@
+param(
+  [Parameter(Mandatory=$false)]
+  [ValidateSet("PAPER","SHADOW")]
+  [string]$Profile = "PAPER",
+
+  [Parameter(Mandatory=$false)]
+  [string]$UnifiedRoot = "
+C:\alpaca-bot\ORG_BOT_UNIFIED
+",
+
+  [Parameter(Mandatory=$false)]
+  [string]$PyExe = "
+C:\alpaca-bot\ORG_BOT_UNIFIED\code\.venv\Scripts\python.exe
+",
+
+  [Parameter(Mandatory=$false)]
+  [int]$RestartDelaySec = 5,
+
+  [Parameter(Mandatory=$false)]
+  [int]$MaxRestarts = 3
+)
+
+$ErrorActionPreference = "Stop"
+Set-StrictMode -Version Latest
+
+$CodeRoot = Join-Path $UnifiedRoot "code"
+$RunRoot  = if($Profile -eq "SHADOW"){ Join-Path $UnifiedRoot "runtime\shadow" } else { Join-Path $UnifiedRoot "runtime\paper" }
+$StateDir = Join-Path $RunRoot "state"
+$LogsDir  = Join-Path $RunRoot "logs"
+
+New-Item -ItemType Directory -Force $StateDir, $LogsDir | Out-Null
+
+$PidFile      = Join-Path $StateDir "tbot.pid"
+$HealthLog    = Join-Path $LogsDir  "runtime_health.log"
+$BotStdoutLog = Join-Path $LogsDir  "bot_stdout.log"
+$BotStderrLog = Join-Path $LogsDir  "bot_stderr.log"
+$CrashLog     = Join-Path $LogsDir  "crash_report.log"
+
+function WL([string]$m){
+  Add-Content -LiteralPath $HealthLog -Value (("{0} | {1}" -f (Get-Date -Format "yyyy-MM-dd HH:mm:ss.fff"), $m))
+}
+
+function Get-TbotProc {
+  Get-CimInstance Win32_Process -Filter "Name='python.exe'" |
+    Where-Object { $_.CommandLine -match "tbot\.main" } |
+    Select-Object ProcessId,ParentProcessId,CommandLine
+}
+
+function Read-PidFile {
+  if(Test-Path $PidFile){
+    try {
+      $txt = Get-Content -LiteralPath $PidFile -Raw -ErrorAction Stop
+      $first = ($txt -split "`r?`n" | Select-Object -First 1).Trim()
+      if($first -match '^\d+$'){ return [int]$first }
+    } catch {}
+  }
+  return $null
+}
+
+function Test-PidAlive([int]$BotPid){
+  try {
+    $p = Get-CimInstance Win32_Process -Filter ("ProcessId=" + $BotPid)
+    if($p -and $p.Name -eq "python.exe" -and $p.CommandLine -match "tbot\.main"){ return $true }
+  } catch {}
+  return $false
+}
+
+function Write-PidFile([int]$BotPid){
+  @(
+    $BotPid
+    ("ts=" + (Get-Date -Format "yyyy-MM-dd HH:mm:ss.fff"))
+    ("profile=" + $Profile)
+  ) | Set-Content -LiteralPath $PidFile -Encoding utf8
+}
+
+function Remove-PidFileSafe {
+  try { Remove-Item -LiteralPath $PidFile -Force -ErrorAction SilentlyContinue } catch {}
+}
+
+WL("manager_start profile=$Profile pyexe=$PyExe runroot=$RunRoot")
+
+$existingPid = Read-PidFile
+if($existingPid){
+  if(Test-PidAlive $existingPid){
+    WL("start_block live_pid=$existingPid")
+    Write-Host "TBOT_RUNTIME_MANAGER_BLOCKED live_pid=$existingPid"
+    exit 0
+  } else {
+    WL("stale_pid_removed pid=$existingPid")
+    Remove-PidFileSafe
+  }
+}
+
+$existingProc = Get-TbotProc | Select-Object -First 1
+if($existingProc){
+  WL("start_block live_proc_pid=$($existingProc.ProcessId)")
+  Write-Host "TBOT_RUNTIME_MANAGER_BLOCKED live_proc_pid=$($existingProc.ProcessId)"
+  exit 0
+}
+
+$restartCount = 0
+
+while($true){
+  WL("bot_start attempt=$($restartCount+1)")
+
+  $env:TBOT_RUNTIME_MANAGER = "1"
+  $env:PYTHONPATH = $CodeRoot
+
+  $botStartTs = Get-Date
+  $botProc = Start-Process -FilePath $PyExe `
+    -ArgumentList @("-m","tbot.main","--run") `
+    -WorkingDirectory $CodeRoot `
+    -PassThru `
+    -RedirectStandardOutput $BotStdoutLog `
+    -RedirectStandardError $BotStderrLog
+
+  Write-PidFile $botProc.Id
+  WL("pid_file_written pid=$($botProc.Id)")
+
+  Wait-Process -Id $botProc.Id
+  $botProc.Refresh()
+  $exitCode = $botProc.ExitCode
+  $uptimeSec = [math]::Round(((Get-Date) - $botStartTs).TotalSeconds, 3)
+
+  WL("bot_exit pid=$($botProc.Id) exitcode=$exitCode uptime_sec=$uptimeSec")
+  if($exitCode -eq 0 -and $uptimeSec -lt 30){
+    WL("fast_exit_suspect pid=$($botProc.Id) exitcode=0 uptime_sec=$uptimeSec")
+  }
+
+  Remove-PidFileSafe
+
+  try {
+    if(Test-Path $BotStderrLog){
+      Add-Content -LiteralPath $CrashLog -Value ("=== crash snapshot " + (Get-Date -Format "yyyy-MM-dd HH:mm:ss.fff") + " ===")
+      Get-Content -LiteralPath $BotStderrLog -Tail 120 | Add-Content -LiteralPath $CrashLog
+      Add-Content -LiteralPath $CrashLog -Value ""
+    }
+  } catch {}
+
+  $restartCount++
+  if($restartCount -gt $MaxRestarts){
+    WL("restart_limit_hit count=$restartCount")
+    break
+  }
+
+  WL("restart_scheduled delay_sec=$RestartDelaySec next_attempt=$($restartCount+1)")
+  Start-Sleep -Seconds $RestartDelaySec
+
+  $still = Get-TbotProc | Select-Object -First 1
+  if($still){
+    WL("restart_aborted live_proc_found pid=$($still.ProcessId)")
+    break
+  }
+}
+
+WL("manager_stop")
+exit 0

@@ -1,0 +1,181 @@
+
+# ==== TBOT_META_ANNOUNCE_V1 BEGIN ====
+import json, os
+from datetime import datetime
+
+def _meta_write(kind,payload):
+    try:
+        rr=os.getenv("TBOT_RUNROOT",".")
+        p=os.path.join(rr,"logs","meta_events.jsonl")
+        os.makedirs(os.path.dirname(p),exist_ok=True)
+
+        row={
+            "ts":datetime.utcnow().isoformat(),
+            "kind":kind,
+            "payload":payload
+        }
+
+        with open(p,"a",encoding="utf-8") as f:
+            f.write(json.dumps(row,ensure_ascii=False)+"\n")
+    except Exception:
+        pass
+# ==== TBOT_META_ANNOUNCE_V1 END ====
+# File: tbot/runtime/announce.py
+
+
+
+# ==== TBOT_META_JSONL_SINK_V2 BEGIN ====
+from __future__ import annotations
+import json as _tbot_json
+import os as _tbot_os
+
+def _tbot_meta_jsonl_path(base_path: str) -> str:
+    d = _tbot_os.path.dirname(base_path) or "."
+    return _tbot_os.path.join(d, "meta_events.jsonl")
+
+def _tbot_write_meta_jsonl(base_path: str, ev) -> None:
+    try:
+        p = _tbot_meta_jsonl_path(base_path)
+        _tbot_os.makedirs(_tbot_os.path.dirname(p), exist_ok=True)
+        row = {
+            "ts": getattr(ev, "ts", None),
+            "level": getattr(ev, "level", None),
+            "kind": getattr(ev, "kind", None),
+            "run_id": getattr(ev, "run_id", None),
+            "payload": getattr(ev, "payload", None),
+        }
+        with open(p, "a", encoding="utf-8") as f:
+            f.write(_tbot_json.dumps(row, ensure_ascii=False) + "\n")
+    except Exception:
+        pass
+# ==== TBOT_META_JSONL_SINK_V2 END ====
+import os
+from typing import Any
+
+from tbot.runtime.console_style import Style, supports_ansi, color_for_level, fmt_kv, center
+from tbot.runtime.events import Event
+
+
+# ==== TBOT_JSONL_SINK_V1_SAFE BEGIN ====
+import json as _tbot_json
+
+def _tbot_event_to_jsonl(ev):
+    try:
+        return _tbot_json.dumps({
+            "ts": getattr(ev, "ts", None),
+            "level": getattr(ev, "level", None),
+            "kind": getattr(ev, "kind", None),
+            "run_id": getattr(ev, "run_id", None),
+            "payload": getattr(ev, "payload", None),
+        }, ensure_ascii=False, separators=(",", ":"))
+    except Exception:
+        return _tbot_json.dumps({"ts": None, "level": "ERROR", "kind": "jsonl_encode_fail", "run_id": "", "payload": {"repr": repr(ev)}}, ensure_ascii=False)
+
+def _tbot_meta_events_path(base_path: str) -> str:
+    d = os.path.dirname(base_path) or "."
+    return os.path.join(d, "meta_events.jsonl")
+
+def _tbot_append_jsonl(path: str, line: str) -> None:
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "a", encoding="utf-8") as _f:
+        _f.write(line + "\n")
+# ==== TBOT_JSONL_SINK_V1_SAFE END ====
+class AnnounceWriter:
+    def __init__(self, path: str) -> None:
+        self.path = path
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+
+        self._style = Style()
+        self._use_color = supports_ansi()
+
+        # File output must be clean (no ANSI).
+        self._file_use_color = False
+
+    def emit(self, ev: Event) -> None:
+        console_line = self._format(ev, use_color=self._use_color)
+        print(console_line)
+
+        file_line = self._format(ev, use_color=self._file_use_color)
+        with open(self.path, "a", encoding="utf-8") as f:
+            f.write(file_line + "\n")
+        _tbot_write_meta_jsonl(self.path, ev)
+
+        # ---- TBOT_JSONL_SINK_V1_SAFE (audit-grade) ----
+        try:
+            _jsonl = _tbot_event_to_jsonl(ev)
+            _meta_path = _tbot_meta_events_path(self.path)
+            _tbot_append_jsonl(_meta_path, _jsonl)
+        except Exception:
+            pass
+        # ---- /TBOT_JSONL_SINK_V1_SAFE ----
+
+
+    def _format(self, ev: Event, *, use_color: bool) -> str:
+        s = self._style
+        lvl = (ev.level or "INFO").upper()
+        ts = ev.ts
+        rid = getattr(ev, "run_id", "") or ""
+
+        lvl_col = lvl.ljust(5)[:5]
+        ts_col = center(ts, 19)
+
+        # compact run id column (for human scanning)
+        rid_col = (rid[-8:] if len(rid) >= 8 else rid).rjust(8)
+
+        if use_color:
+            lvl_color = color_for_level(lvl, s)
+            lvl_col = f"{lvl_color}{s.bold}{lvl_col}{s.reset}"
+            ts_col = f"{s.dim}{ts_col}{s.reset}"
+            rid_col = f"{s.dim}{rid_col}{s.reset}"
+
+        kind = ev.kind
+        p = ev.payload or {}
+
+        if kind == "heartbeat":
+            msg = "HEARTBEAT " + " ".join([
+                fmt_kv("in_session", str(p.get("in_session")), s=s, use_color=use_color),
+                fmt_kv("pre_close", str(p.get("pre_close")), s=s, use_color=use_color),
+                fmt_kv("alpha_kill", str(p.get("alpha_kill")), s=s, use_color=use_color),
+                fmt_kv("portfolio_kill", str(p.get("portfolio_kill")), s=s, use_color=use_color),
+                fmt_kv("daily_r", f"{float(p.get('daily_r', 0.0)):+.2f}", s=s, use_color=use_color),
+                fmt_kv("week_r", f"{float(p.get('week_r', 0.0)):+.2f}", s=s, use_color=use_color),
+                fmt_kv("active", str(p.get("active")), s=s, use_color=use_color),
+            ])
+        elif kind in ("trade_open", "trade_close"):
+            msg = (kind.upper() + " " + " ".join([
+                fmt_kv("symbol", str(p.get("symbol")), s=s, use_color=use_color),
+                fmt_kv("sid", str(p.get("sid")), s=s, use_color=use_color),
+                fmt_kv("side", str(p.get("side")), s=s, use_color=use_color),
+                fmt_kv("qty", str(p.get("qty")), s=s, use_color=use_color),
+                fmt_kv("entry", f"{float(p.get('entry', 0.0)):.2f}", s=s, use_color=use_color),
+                fmt_kv("stop", f"{float(p.get('stop', 0.0)):.2f}", s=s, use_color=use_color),
+                fmt_kv("tp", f"{float(p.get('tp', 0.0)):.2f}", s=s, use_color=use_color),
+                fmt_kv("exit", str(p.get("exit")), s=s, use_color=use_color),
+                fmt_kv("r", str(p.get("r")), s=s, use_color=use_color),
+                fmt_kv("reason", str(p.get("reason")), s=s, use_color=use_color),
+            ]))
+        elif kind in ("alpha_kill_change", "portfolio_kill_change"):
+            msg = f"{kind} " + " ".join([
+                fmt_kv("value", str(p.get("value")), s=s, use_color=use_color),
+                fmt_kv("daily_r", str(p.get("daily_r", "")), s=s, use_color=use_color) if kind == "alpha_kill_change" else "",
+                fmt_kv("week_r", str(p.get("week_r", "")), s=s, use_color=use_color) if kind == "portfolio_kill_change" else "",
+            ]).strip()
+        else:
+            msg = f"{kind} {p}"
+
+        sep = "|"
+        if use_color:
+            sep = f"{s.dim}|{s.reset}"
+
+        # New format includes run_id column:
+        # LEVEL |     TS     |   RID   | message
+        return f"{lvl_col} {sep} {ts_col} {sep} {rid_col} {sep} {msg}"
+
+
+def safe_payload(obj: Any) -> dict[str, Any]:
+    if hasattr(obj, "__dict__"):
+        return dict(obj.__dict__)
+    return {"value": obj}
+
+
+

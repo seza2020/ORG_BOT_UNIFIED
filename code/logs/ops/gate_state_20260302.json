@@ -1,0 +1,12 @@
+{
+  "accepted_risk_usd": 0.0,
+  "boot": 33,
+  "day": "2026-03-02",
+  "fake_plans": 0,
+  "note": "persistent-cap-v1 meta-backed",
+  "shadow_accept": 0,
+  "shadow_plan": 0,
+  "shadow_reject": 0,
+  "tz": "America/Los_Angeles",
+  "valid_accepts": 0
+}
