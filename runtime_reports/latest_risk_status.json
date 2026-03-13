@@ -1,0 +1,10 @@
+{
+  "generated_at": "2026-03-13T07:55:09",
+  "risk_ledger_exists": true,
+  "risk_ledger_lines": 13,
+  "risk_ledger_info": {
+    "exists": true,
+    "bytes": 329,
+    "last_write_time": "2026-03-10T17:35:03"
+  }
+}

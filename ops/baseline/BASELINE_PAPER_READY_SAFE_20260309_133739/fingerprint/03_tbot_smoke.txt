@@ -1,1 +1,0 @@
-C:\alpaca-bot\ORG_BOT_UNIFIED\code\.venv\Scripts\python.exe: Error while finding module specification for 'tbot.main' (ModuleNotFoundError: No module named 'tbot')

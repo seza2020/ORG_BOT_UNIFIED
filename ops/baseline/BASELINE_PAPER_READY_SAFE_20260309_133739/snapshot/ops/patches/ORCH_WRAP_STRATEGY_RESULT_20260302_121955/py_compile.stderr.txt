@@ -1,4 +1,0 @@
-  File "C:\alpaca-bot\ORG_BOT_UNIFIED\code\tbot\runtime\orchestrator.py", line 14
-    from __future__ import annotations
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-SyntaxError: from __future__ imports must occur at the beginning of the file

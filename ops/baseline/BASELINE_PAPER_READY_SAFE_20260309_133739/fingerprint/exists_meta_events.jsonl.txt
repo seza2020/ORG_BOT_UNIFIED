@@ -1,5 +1,0 @@
-
-FullName      : C:\alpaca-bot\ORG_BOT_UNIFIED\runtime\paper\logs\meta_events.jsonl
-Length        : 1538584
-LastWriteTime : 3/9/2026 1:37:44 PM
-

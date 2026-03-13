@@ -1,5 +1,0 @@
-
-FullName      : C:\alpaca-bot\ORG_BOT_UNIFIED\runtime\paper\logs\shadow_plans.jsonl
-Length        : 687715
-LastWriteTime : 3/9/2026 6:16:07 PM
-

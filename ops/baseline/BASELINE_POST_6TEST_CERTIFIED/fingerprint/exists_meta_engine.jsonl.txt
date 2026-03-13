@@ -1,5 +1,0 @@
-
-FullName      : C:\alpaca-bot\ORG_BOT_UNIFIED\runtime\paper\logs\meta_engine.jsonl
-Length        : 258932
-LastWriteTime : 3/9/2026 6:16:07 PM
-

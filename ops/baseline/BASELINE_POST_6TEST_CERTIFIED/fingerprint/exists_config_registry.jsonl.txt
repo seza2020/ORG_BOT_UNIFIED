@@ -1,5 +1,0 @@
-
-FullName      : C:\alpaca-bot\ORG_BOT_UNIFIED\runtime\paper\validation_v2\config_registry.jsonl
-Length        : 613
-LastWriteTime : 3/6/2026 5:30:01 PM
-

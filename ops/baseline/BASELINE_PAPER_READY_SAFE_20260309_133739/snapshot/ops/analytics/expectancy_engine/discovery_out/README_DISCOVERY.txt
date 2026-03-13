@@ -1,1 +1,0 @@
-Use best_outcome_candidates.csv and sample_records.json to identify the real closed-trade schema for Expectancy Engine V2.

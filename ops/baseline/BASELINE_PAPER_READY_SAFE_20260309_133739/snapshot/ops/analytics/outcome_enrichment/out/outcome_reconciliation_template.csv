@@ -1,3 +1,0 @@
-plan_key,resolved_status,resolved_r,exit,exit_ts,outcome_source,notes
-EXAMPLE_PLAN_KEY_1,CLOSED_WIN,1.6,99.2,2026-03-10T10:14:22,manual_reconciliation,tp hit confirmed
-EXAMPLE_PLAN_KEY_2,CLOSED_LOSS,-1.0,100.5,2026-03-10T09:48:05,manual_reconciliation,stop hit confirmed

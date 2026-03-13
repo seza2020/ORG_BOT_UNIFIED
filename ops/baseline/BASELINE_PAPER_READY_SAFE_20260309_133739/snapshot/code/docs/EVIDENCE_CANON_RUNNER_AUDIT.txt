@@ -1,9 +1,0 @@
-EVIDENCE: CANON RUNNER AUDIT
-
-This file tracks audit evidence for the canonical runner workflow:
-- How the runner is invoked
-- What artifacts are produced
-- How QA/QC is validated
-- How secrets are excluded
-
-Update this file whenever the runner/build workflow changes.

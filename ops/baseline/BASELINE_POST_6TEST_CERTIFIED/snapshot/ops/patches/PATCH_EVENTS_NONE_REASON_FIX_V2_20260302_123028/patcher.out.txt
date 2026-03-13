@@ -1,5 +1,0 @@
-Traceback (most recent call last):
-  File "C:\alpaca-bot\ORG_BOT_UNIFIED\ops\patches\PATCH_EVENTS_NONE_REASON_FIX_V2_20260302_123028\patch_events_none_reason_fix_v2.py", line 4, in <module>
-    with open(path, "r", encoding="utf-8") as f:
-         ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-FileNotFoundError: [Errno 2] No such file or directory: 'C:\\\\alpaca-bot\\\\ORG_BOT_UNIFIED\\\\code\\\\tbot\\\\runtime\\\\events\\.py'

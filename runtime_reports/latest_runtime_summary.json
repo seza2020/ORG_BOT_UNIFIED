@@ -1,0 +1,46 @@
+{
+  "generated_at": "2026-03-13T07:55:09",
+  "runtime_status": "alive",
+  "files": {
+    "meta_events": {
+      "lines": 378749,
+      "info": {
+        "exists": true,
+        "bytes": 89259496,
+        "last_write_time": "2026-03-13T07:55:05"
+      }
+    },
+    "meta_engine": {
+      "lines": 29671,
+      "info": {
+        "exists": true,
+        "bytes": 4571079,
+        "last_write_time": "2026-03-13T07:55:06"
+      }
+    },
+    "strategy_perf_events": {
+      "lines": 41527,
+      "info": {
+        "exists": true,
+        "bytes": 16454245,
+        "last_write_time": "2026-03-13T07:55:05"
+      }
+    },
+    "shadow_plans": {
+      "lines": 3793,
+      "info": {
+        "exists": true,
+        "bytes": 1559529,
+        "last_write_time": "2026-03-10T07:37:07"
+      }
+    },
+    "risk_ledger_v1": {
+      "lines": 13,
+      "info": {
+        "exists": true,
+        "bytes": 329,
+        "last_write_time": "2026-03-10T17:35:03"
+      }
+    }
+  }
+}

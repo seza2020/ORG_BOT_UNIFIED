@@ -1,34 +1,31 @@
-# runtime artifacts
-*.log
-*.jsonl
-*.runtime
-*.lock
-*.pid
-*.tmp
-
-# backups
-*.bak
-*.bak_*
-
-# python cache
+# Python
 __pycache__/
 *.pyc
 
-# local runtime
+# Virtual env
+.venv/
+venv/
+
+# Runtime
 runtime/
-state/
-locks/
 logs/
+locks/
+
+# Trading artifacts
+*.zip
+*.7z
+
+# Secrets
+secrets/
+**/secrets/
+
+# Snapshots
+baseline/
+snapshots/
+
+# Evidence raw
+ops/evidence/
 
 # OS
-.DS_Store
 Thumbs.db
-
-# trading runtime archives
-*_archive/
-hot_runtime/
-full_archive/
-
-# local configs
-.env
-.env.local
+.DS_Store

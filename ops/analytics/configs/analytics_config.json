@@ -1,0 +1,9 @@
+{
+  "version": "1.0",
+  "mode": "paper",
+  "project_root": "C:\\alpaca-bot\\ORG_BOT_UNIFIED",
+  "runtime_logs_root": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\runtime\\paper\\logs",
+  "runtime_reports_root": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\runtime_reports",
+  "evidence_index_root": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\evidence_index",
+  "reports_root": "C:\\alpaca-bot\\ORG_BOT_UNIFIED\\ops\\analytics\\reports"
+}

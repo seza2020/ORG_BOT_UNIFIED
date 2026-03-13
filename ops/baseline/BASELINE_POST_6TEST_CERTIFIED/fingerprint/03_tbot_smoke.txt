@@ -1,7 +1,0 @@
-TBOT_SMOKE_OK
-CWD= C:\alpaca-bot\ORG_BOT_UNIFIED\code
-PYTHONPATH= C:\alpaca-bot\ORG_BOT_UNIFIED\code
-TBOT_RUNROOT= C:\alpaca-bot\ORG_BOT_UNIFIED\runtime\paper
-TBOT_RUNTIME_MANAGER= 0
-SYS_EXEC= C:\alpaca-bot\ORG_BOT_UNIFIED\code\.venv\Scripts\python.exe
-LOCK_PATH= C:\alpaca-bot\ORG_BOT_UNIFIED\runtime\paper\locks\tbot_main.lock

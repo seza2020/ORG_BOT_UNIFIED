@@ -1,9 +1,0 @@
-{
-  "max_positions": 8,
-  "max_symbol_concentration_pct": 0.35,
-  "max_gross_exposure_pct": 1.2,
-  "max_net_exposure_pct": 0.8,
-  "max_leverage": 1.25,
-  "fail_closed_if_no_keys": false,
-  "profile": "paper"
-}

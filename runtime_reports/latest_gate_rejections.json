@@ -1,0 +1,13 @@
+{
+  "generated_at": "2026-03-13T07:55:09",
+  "counts": {
+    "alpha_mode_off": 66105,
+    "trend_weak": 0,
+    "out_of_session": 0,
+    "state_confidence_low": 5732,
+    "gate_reject": 85880,
+    "no_candidate": 14458,
+    "cooldown": 0,
+    "risk_budget": 0
+  }
+}

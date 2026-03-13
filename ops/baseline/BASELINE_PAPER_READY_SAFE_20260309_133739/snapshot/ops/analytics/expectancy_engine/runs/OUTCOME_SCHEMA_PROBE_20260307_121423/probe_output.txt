@@ -1,3 +1,0 @@
-OUTCOME_SCHEMA_PROBE=OK
-SUMMARY_JSON=C:\alpaca-bot\ORG_BOT_UNIFIED\ops\analytics\expectancy_engine\schema_probe_out\outcome_schema_summary.json
-SAMPLES_JSON=C:\alpaca-bot\ORG_BOT_UNIFIED\ops\analytics\expectancy_engine\schema_probe_out\outcome_schema_samples.json

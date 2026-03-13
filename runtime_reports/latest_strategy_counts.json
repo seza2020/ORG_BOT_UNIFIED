@@ -1,0 +1,10 @@
+{
+  "generated_at": "2026-03-13T07:55:09",
+  "counts": {
+    "chop_v1_eval": 15600,
+    "chop_v1_rejected": 14458,
+    "chop_v1_plan_created": 1142,
+    "\"kind\": \"plan_created\"": 3793,
+    "\"kind\": \"gate_decision\"": 25899
+  }
+}

@@ -1,8 +1,0 @@
-ITER=28
-TYPE=UNEXPECTED_INDENT
-LINE=549
-BEFORE_INDENT=4
-AFTER_INDENT=4
-
-BEFORE:     if getattr(args, "gate_max_risk_per_trade_usd", None) is None:
-AFTER :     if getattr(args, "gate_max_risk_per_trade_usd", None) is None:

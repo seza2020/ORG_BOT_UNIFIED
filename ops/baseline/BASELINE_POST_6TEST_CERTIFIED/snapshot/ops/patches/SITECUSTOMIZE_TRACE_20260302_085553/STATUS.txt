@@ -1,2 +1,0 @@
-SECTION7C wrote C:\alpaca-bot\ORG_BOT_UNIFIED\code\sitecustomize.py
-LOG=C:\alpaca-bot\ORG_BOT_UNIFIED\runtime\paper\logs\sitecustomize_boot.log

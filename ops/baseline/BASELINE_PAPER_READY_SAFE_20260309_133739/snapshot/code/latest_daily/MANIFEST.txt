@@ -1,5 +1,0 @@
-LATEST_DAILY_MANIFEST
-- Date:
-- Run:
-- QC:
-- Files:

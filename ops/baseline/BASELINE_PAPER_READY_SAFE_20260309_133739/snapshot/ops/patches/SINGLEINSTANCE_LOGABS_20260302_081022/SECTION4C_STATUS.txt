@@ -1,1 +1,0 @@
-SECTION4C_DONE paper=True shadow=True

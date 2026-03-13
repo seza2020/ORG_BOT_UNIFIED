@@ -1,7 +1,0 @@
-=== COMPILEALL ===
-Can't list 'tbot'
-COMPILEALL_OK= True
-
-=== IMPORT ===
-IMPORT_OK=1
-

@@ -1,0 +1,13 @@
+{
+  "version": "1.0",
+  "known_rejections": [
+    "alpha_mode_off",
+    "trend_weak",
+    "out_of_session",
+    "state_confidence_low",
+    "gate_reject",
+    "no_candidate",
+    "cooldown_active",
+    "risk_budget_unavailable"
+  ]
+}
