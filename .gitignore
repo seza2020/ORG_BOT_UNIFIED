@@ -29,3 +29,22 @@ ops/evidence/
 # OS
 Thumbs.db
 .DS_Store
+# Local audit / logs
+pre_sync_audit/
+code/sitecustomize_boot.log
+
+# Local backups
+*.bak
+*.bak_*
+
+# Security / secret diagnostics not for public repo
+code/tools/SCAN_SECRETS_RUNTIME_V1.ps1
+code/tools/ops/APPLY_FIX_SECRETS_ISOLATION_V2.ps1
+code/tools/ops/PATCH_RUNNER_SECRETS_DIAG_V2.ps1
+code/tools/ops/POSTFREEZE_SECRET_CERTIFY_V2.ps1
+code/tools/ops/SECRET_LEAK_SCAN_RUNROOT_ZIP_V1.ps1
+code/tools/ops/SECRET_LEAK_SCAN_RUNROOT_ZIP_V2.ps1
+ops/patches/FIX_PAPER_SECRETS_20260303_070547/
+ops/patches/REPAIR_PARAM_SECRETS_20260303_071006/
+code/tools/LOCATE_SECRET_HITS_V1.ps1
+code/tools/LOCATE_SECRET_HITS_V2.ps1
