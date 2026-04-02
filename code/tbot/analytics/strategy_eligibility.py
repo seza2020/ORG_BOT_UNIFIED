@@ -25,14 +25,30 @@ class StrategyEligibilityEngine:
         min_events: int = 20,
         min_expectancy_r: float = -0.2,
         min_win_rate: float = 0.35,
+        snapshot_missing_policy: str = "validation_only",
+        validation_only_strategies: Optional[set[str]] = None,
     ) -> None:
         self.runroot = runroot
         self.logs_dir = os.path.join(runroot, "logs")
-        self.snapshot_path = os.path.join(self.logs_dir, "strategy_perf_snapshot.json")
+        self.snapshot_run_path = os.path.join(self.logs_dir, "strategy_perf_snapshot_run.json")
+        self.snapshot_live_path = os.path.join(self.logs_dir, "strategy_perf_snapshot.json")
+        self.snapshot_path = self.snapshot_run_path if os.path.exists(self.snapshot_run_path) else self.snapshot_live_path
 
         self.min_events = int(min_events)
         self.min_expectancy_r = float(min_expectancy_r)
         self.min_win_rate = float(min_win_rate)
+
+        policy = str(snapshot_missing_policy or "validation_only").strip().lower()
+        if policy not in {"validation_only", "fail_closed"}:
+            policy = "validation_only"
+        self.snapshot_missing_policy = policy
+
+        strategies = validation_only_strategies or {"A_VALIDATION_PIPELINE_V1"}
+        self.validation_only_strategies = {
+            str(s or "").strip().upper()
+            for s in strategies
+            if str(s or "").strip()
+        }
 
     @classmethod
     def from_env(cls) -> "StrategyEligibilityEngine":
@@ -40,11 +56,22 @@ class StrategyEligibilityEngine:
         min_events = int(os.getenv("TBOT_ELIG_MIN_EVENTS", "20") or "20")
         min_expectancy_r = float(os.getenv("TBOT_ELIG_MIN_EXP_R", "-0.2") or "-0.2")
         min_win_rate = float(os.getenv("TBOT_ELIG_MIN_WIN_RATE", "0.35") or "0.35")
+
+        snapshot_missing_policy = os.getenv("TBOT_ELIG_SNAPSHOT_MISSING_POLICY", "validation_only") or "validation_only"
+        validation_only_raw = os.getenv("TBOT_ELIG_VALIDATION_ONLY_STRATEGIES", "A_VALIDATION_PIPELINE_V1") or "A_VALIDATION_PIPELINE_V1"
+        validation_only_strategies = {
+            str(x or "").strip().upper()
+            for x in validation_only_raw.split(",")
+            if str(x or "").strip()
+        }
+
         return cls(
             runroot=runroot,
             min_events=min_events,
             min_expectancy_r=min_expectancy_r,
             min_win_rate=min_win_rate,
+            snapshot_missing_policy=snapshot_missing_policy,
+            validation_only_strategies=validation_only_strategies,
         )
 
     def decide(
@@ -83,13 +110,33 @@ class StrategyEligibilityEngine:
             row = self._find_snapshot_row(strategy_id=strat, market_state=state, regime=regime)
 
             if row is None:
+                if self._snapshot_missing_allowed_for_validation_only(strat):
+                    return StrategyEligibilityDecision(
+                        strategy_id=strat,
+                        market_state=state,
+                        eligible=True,
+                        reason="eligibility_snapshot_missing_validation_only",
+                        regime=regime,
+                        extra={
+                            "strategy_family": fam,
+                            "admissibility_mode": "validation_only",
+                            "countable_admissible": False,
+                            "eligibility_policy_version": "elig_policy_v2",
+                        },
+                    )
+
                 return StrategyEligibilityDecision(
                     strategy_id=strat,
                     market_state=state,
-                    eligible=True,
-                    reason="eligibility_snapshot_missing_fail_open",
+                    eligible=False,
+                    reason="eligibility_snapshot_missing_fail_closed",
                     regime=regime,
-                    extra={"strategy_family": fam},
+                    extra={
+                        "strategy_family": fam,
+                        "admissibility_mode": "governed_or_countable",
+                        "countable_admissible": False,
+                        "eligibility_policy_version": "elig_policy_v2",
+                    },
                 )
 
             event_count = int(row.get("event_count", 0) or 0)
@@ -148,13 +195,37 @@ class StrategyEligibilityEngine:
             )
 
         except Exception as e:
+            safe_strat = str(strategy_id or "UNKNOWN")
+            safe_state = str(market_state or "UNKNOWN").upper()
+            safe_fam = str(strategy_family or self._infer_family(safe_strat)).upper()
+
+            if self._snapshot_missing_allowed_for_validation_only(safe_strat):
+                return StrategyEligibilityDecision(
+                    strategy_id=safe_strat,
+                    market_state=safe_state,
+                    eligible=True,
+                    reason=f"eligibility_error_validation_only:{type(e).__name__}",
+                    regime=regime,
+                    extra={
+                        "strategy_family": safe_fam,
+                        "admissibility_mode": "validation_only",
+                        "countable_admissible": False,
+                        "eligibility_policy_version": "elig_policy_v2",
+                    },
+                )
+
             return StrategyEligibilityDecision(
-                strategy_id=str(strategy_id or "UNKNOWN"),
-                market_state=str(market_state or "UNKNOWN").upper(),
-                eligible=True,
-                reason=f"eligibility_error_fail_open:{type(e).__name__}",
+                strategy_id=safe_strat,
+                market_state=safe_state,
+                eligible=False,
+                reason=f"eligibility_error_fail_closed:{type(e).__name__}",
                 regime=regime,
-                extra={"strategy_family": str(strategy_family or "")},
+                extra={
+                    "strategy_family": safe_fam,
+                    "admissibility_mode": "governed_or_countable",
+                    "countable_admissible": False,
+                    "eligibility_policy_version": "elig_policy_v2",
+                },
             )
 
     def _load_snapshot_rows(self) -> list[dict]:
@@ -198,6 +269,12 @@ class StrategyEligibilityEngine:
 
         return exact or state_only or any_row
 
+    def _snapshot_missing_allowed_for_validation_only(self, strategy_id: str) -> bool:
+        if self.snapshot_missing_policy != "validation_only":
+            return False
+        sid = str(strategy_id or "").strip().upper()
+        return sid in self.validation_only_strategies
+
     @staticmethod
     def _maybe_float(x: Any) -> Optional[float]:
         try:
@@ -210,6 +287,10 @@ class StrategyEligibilityEngine:
     @staticmethod
     def _infer_family(strategy_id: str) -> str:
         sid = str(strategy_id or "").upper()
+
+        # Explicit runtime validation routing
+        if sid == "A_VALIDATION_PIPELINE_V1":
+            return "CHOP"
 
         # phase-1 conservative mapping
         if sid.startswith("S01") or sid.startswith("S11") or sid.startswith("S12") or sid.startswith("A_"):
