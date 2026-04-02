@@ -24,7 +24,7 @@ def decide_alpha_mode(*, regime: str, bias: str, trend_strength: float) -> Alpha
     # Thresholds (defaults preserve current behavior)
     TREND_ON_TH  = float(os.getenv("TBOT_ALPHA_TREND_ON_TH",  "0.60"))
     TREND_CAP_TH = float(os.getenv("TBOT_ALPHA_TREND_CAP_TH", "0.35"))
-    CHOP_CAP_TH  = float(os.getenv("TBOT_ALPHA_CHOP_CAP_TH",  "0.75"))
+    CHOP_CAP_TH  = float(os.getenv("TBOT_ALPHA_CHOP_CAP_TH",  "0.05"))
 
     # Hard blocks
     if r == "HIGH_VOL":
@@ -34,7 +34,9 @@ def decide_alpha_mode(*, regime: str, bias: str, trend_strength: float) -> Alpha
     if r == "CHOP":
         if ts >= CHOP_CAP_TH:
             return AlphaDecision(mode="CAP50", cap_ratio=0.5, reason=f"alpha_cap_chop_strong(ts={ts:.3f},th={CHOP_CAP_TH:.2f})")
-        return AlphaDecision(mode="OFF", cap_ratio=0.0, reason=f"alpha_off_chop(ts={ts:.3f})")
+        if b not in ("", "NONE", "UNKNOWN", "NEUTRAL", "FLAT") and ts > 0.0:
+            return AlphaDecision(mode="CAP50", cap_ratio=0.5, reason=f"alpha_cap_chop_bias_preserve(ts={ts:.3f},th={CHOP_CAP_TH:.2f})")
+        return AlphaDecision(mode="OFF", cap_ratio=0.0, reason=f"alpha_off_chop(ts={ts:.3f},th={CHOP_CAP_TH:.2f})")
 
     # Trend: scale by strength
     if r == "TREND":
@@ -46,4 +48,7 @@ def decide_alpha_mode(*, regime: str, bias: str, trend_strength: float) -> Alpha
 
     # Default safe
     return AlphaDecision(mode="OFF", cap_ratio=0.0, reason=f"alpha_off_unknown_regime(ts={ts:.3f},r={r})")
+
+
+
 

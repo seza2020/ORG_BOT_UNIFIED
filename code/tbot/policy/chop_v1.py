@@ -1,7 +1,8 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Optional
+import os
 
 
 STRATEGY_ID = "CHOP_V1_VWAP_RECLAIM_LIGHT"
@@ -28,7 +29,7 @@ def decide_chop_v1(
     ema_fast: float,
     ema_slow: float,
     bias: str,
-    displacement_min: float = 0.0015,
+    displacement_min: float = float(os.getenv("TBOT_CHOP_DISPLACEMENT_MIN", "0.0015")),
     chop_ema_spread_max: float = 0.0008,
     stop_pct_fallback: float = 0.0025,
     tp_pct_base: float = 0.0040,
@@ -105,6 +106,17 @@ def decide_chop_v1(
             price_vs_vwap_pct=price_vs_vwap_pct,
         )
 
+    _disp_mult = float(os.getenv('TBOT_CHOP_DISPLACEMENT_MULT', '1.0') or '1.0')
+    if _disp_mult <= 0:
+        _disp_mult = 1.0
+    displacement_min_default = float(displacement_min)
+    _disp_override_raw = os.getenv('TBOT_CHOP_DISPLACEMENT_MIN_OVERRIDE', '').strip()
+    try:
+        displacement_min = float(_disp_override_raw) if _disp_override_raw else displacement_min_default
+    except Exception:
+        displacement_min = displacement_min_default
+    displacement_min = max(0.0003, min(displacement_min, displacement_min_default))
+    # TBOT_CHOP_DISPLACEMENT_MIN_OVERRIDE
     if displacement_pct < displacement_min:
         return ChopDecision(
             eligible=False,
@@ -192,3 +204,4 @@ def decide_chop_v1(
         ema_spread_pct=round(ema_spread_pct, 6),
         price_vs_vwap_pct=round(price_vs_vwap_pct, 6),
     )
+
