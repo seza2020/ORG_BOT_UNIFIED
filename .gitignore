@@ -48,3 +48,8 @@ ops/patches/FIX_PAPER_SECRETS_20260303_070547/
 ops/patches/REPAIR_PARAM_SECRETS_20260303_071006/
 code/tools/LOCATE_SECRET_HITS_V1.ps1
 code/tools/LOCATE_SECRET_HITS_V2.ps1
+# Runtime artifact hygiene
+code/runtime/paper/logs/
+code/runtime/paper/locks/
+preprod/
+_audit/
