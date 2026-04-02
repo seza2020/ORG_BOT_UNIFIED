@@ -103,6 +103,55 @@ def _acquire_mutex(name: str) -> bool:
         _e(f"[SINGLE_INSTANCE] MUTEX_EXCEPTION name={name} err={repr(e)} -> continue")
         return True
 
+def _pid_exe_path(pid: int):
+    if os.name != "nt":
+        return None
+    try:
+        import ctypes
+        from ctypes import wintypes
+        PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+
+        OpenProcess = kernel32.OpenProcess
+        OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+        OpenProcess.restype = wintypes.HANDLE
+
+        QueryFullProcessImageNameW = kernel32.QueryFullProcessImageNameW
+        QueryFullProcessImageNameW.argtypes = [wintypes.HANDLE, wintypes.DWORD, wintypes.LPWSTR, ctypes.POINTER(wintypes.DWORD)]
+        QueryFullProcessImageNameW.restype = wintypes.BOOL
+
+        CloseHandle = kernel32.CloseHandle
+        CloseHandle.argtypes = [wintypes.HANDLE]
+        CloseHandle.restype = wintypes.BOOL
+
+        h = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, int(pid))
+        if not h:
+            return None
+        try:
+            size = wintypes.DWORD(32768)
+            buf = ctypes.create_unicode_buffer(size.value)
+            if not QueryFullProcessImageNameW(h, 0, buf, ctypes.byref(size)):
+                return None
+            return buf.value
+        finally:
+            CloseHandle(h)
+    except BaseException:
+        return None
+
+
+def _pid_owner_state(pid: int):
+    exe_path = _pid_exe_path(pid)
+    if not exe_path:
+        return "UNKNOWN"
+    try:
+        lhs = os.path.normcase(os.path.normpath(exe_path))
+        rhs = os.path.normcase(os.path.normpath(sys.executable))
+        if lhs == rhs:
+            return "MATCH"
+        return "FOREIGN"
+    except BaseException:
+        return "UNKNOWN"
+
 def enforce_single_instance(profile: str | None = None, runroot: str | None = None) -> None:
     global _ENTERED
     if _ENTERED:
@@ -132,8 +181,17 @@ def enforce_single_instance(profile: str | None = None, runroot: str | None = No
         info = _read_lock(lp) or {}
         pid = info.get("pid")
         if isinstance(pid, int) and pid > 0 and _pid_alive(pid):
-            _e(f"[SINGLE_INSTANCE] FILE_LOCK_EXISTS path={lp} owner={json.dumps(info, ensure_ascii=False)} -> exit {_EXIT_CODE}")
-            raise SystemExit(_EXIT_CODE)
+            owner_pid = int(pid)
+            owner_state = _pid_owner_state(owner_pid)
+            if owner_state == "MATCH":
+                _e(f"TBOT_SINGLE_INSTANCE_BLOCK {owner_pid}")
+                _e(f"[SINGLE_INSTANCE] FILE_LOCK_EXISTS path={lp} owner_pid={owner_pid} authoritative=true owner_state={owner_state} -> exit {_EXIT_CODE}")
+                raise SystemExit(_EXIT_CODE)
+            if owner_state == "FOREIGN":
+                _e(f"[SINGLE_INSTANCE] FILE_LOCK_FOREIGN_OWNER_RECLAIM path={lp} owner_pid={owner_pid} authoritative=true owner_state={owner_state}")
+            else:
+                _e(f"[SINGLE_INSTANCE] FILE_LOCK_OWNER_UNRESOLVED path={lp} owner_pid={owner_pid} authoritative=true owner_state={owner_state} -> exit {_EXIT_CODE}")
+                raise SystemExit(_EXIT_CODE)
         _e(f"[SINGLE_INSTANCE] FILE_LOCK_STALE path={lp} owner={json.dumps(info, ensure_ascii=False)} -> removing")
         _remove(lp)
         try:
