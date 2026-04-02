@@ -51,12 +51,25 @@ def build_core_context(snapshot, regime):
             trend_strength = 0.0
 
         return {
-            "bias": bias,
+"bias": bias,
             "trend_strength": round(float(trend_strength), 4),
             "vwap_state": vwap_state,
             "ema_sep": round(float(ema_sep), 6),
+            "symbol": getattr(snap, "symbol", "SPY"),
+            "provider_name": getattr(snap, "provider_name", None),
+            "input_trade_ts": getattr(snap, "input_trade_ts", getattr(snap, "source_trade_ts", None)),
+            "input_bar_ts": getattr(snap, "input_bar_ts", getattr(snap, "source_bar_ts", None)),
+            "latest_trade_ts": getattr(snap, "latest_trade_ts", getattr(snap, "source_trade_ts", None)),
+            "latest_bar_ts": getattr(snap, "latest_bar_ts", getattr(snap, "source_bar_ts", None)),
+            "trade_age_sec": getattr(snap, "trade_age_sec", None),
+            "bar_age_sec": getattr(snap, "bar_age_sec", None),
+            "source_stale": getattr(snap, "source_stale", None),
+            "stale_reason": getattr(snap, "stale_reason", None),
+            "trade_fetch_ok": getattr(snap, "trade_fetch_ok", None),
+            "bars_fetch_ok": getattr(snap, "bars_fetch_ok", None),
             "reason": "core_context_from_snapshot_v1",
         }
     except Exception as e:
         return {"bias": "FLAT", "trend_strength": 0.0, "reason": f"core_context_exception:{type(e).__name__}"}
+
 
