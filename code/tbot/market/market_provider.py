@@ -20,6 +20,33 @@ def _bar_vwap(bar):
 
 def _bar_time(bar):
     return _bar_get(bar, "t", "timestamp")
+
+def _ts_parse_utc(v):
+    if v is None:
+        return None
+    try:
+        s = str(v).strip()
+        if not s:
+            return None
+        if s.endswith("Z"):
+            s = s[:-1] + "+00:00"
+        dt = datetime.fromisoformat(s)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(timezone.utc)
+    except Exception:
+        return None
+
+def _age_sec(v, now_utc=None):
+    dt = _ts_parse_utc(v)
+    if dt is None:
+        return None
+    try:
+        now = now_utc or datetime.now(timezone.utc)
+        return round(float((now - dt).total_seconds()), 6)
+    except Exception:
+        return None
+
 # --- TBOT_PATCH_BAR_SCHEMA_END ---
 
 
@@ -83,6 +110,17 @@ class MarketSnap:
     ema_fast: Optional[float] = None
     ema_slow: Optional[float] = None
     bar_index: Optional[int] = None
+    provider_name: Optional[str] = None
+    input_trade_ts: Optional[str] = None
+    input_bar_ts: Optional[str] = None
+    latest_trade_ts: Optional[str] = None
+    latest_bar_ts: Optional[str] = None
+    trade_age_sec: Optional[float] = None
+    bar_age_sec: Optional[float] = None
+    source_stale: Optional[bool] = None
+    stale_reason: Optional[str] = None
+    trade_fetch_ok: Optional[bool] = None
+    bars_fetch_ok: Optional[bool] = None
     @property
     def ef(self) -> Optional[float]:
         # Engine legacy alias: ef == ema_fast
@@ -232,6 +270,8 @@ def _bars_url(sym: str, feed: str, start: datetime, end: datetime, limit: int) -
         "feed": feed,
         "start": start.isoformat().replace("+00:00", "Z"),
         "end": end.isoformat().replace("+00:00", "Z"),
+        "adjustment": "raw",
+        "sort": "asc",
     }
     return f"https://data.alpaca.markets/v2/stocks/{sym}/bars?{urlencode(params)}"
 
@@ -302,13 +342,14 @@ def _http_get_retry(url: str, headers: dict, timeout_sec: float = 10.0, tries: i
 
 def build_market_snapshot(symbols: Tuple[str, ...], **_kw) -> SnapshotContainer:
     feed = _env("TBOT_DATA_FEED") or "iex"
+    bars_feed = _env("TBOT_BARS_FEED") or feed
     debug = (_env("TBOT_MARKET_DEBUG") == "1")
 
     headers = _make_headers()
 
-    # Wide window to survive after-hours / gaps
+    # Narrow recent window for bars to reduce stale historical slices
     end = datetime.now(timezone.utc)
-    start = end - timedelta(days=5)
+    start = end - timedelta(hours=2)
 
     out: Dict[str, MarketSnap] = {}
 
@@ -319,12 +360,29 @@ def build_market_snapshot(symbols: Tuple[str, ...], **_kw) -> SnapshotContainer:
         es = None
         bar_index = None
 
+        provider_name = f"alpaca:trade={feed},bars={bars_feed}"
+        input_trade_ts = None
+        input_bar_ts = None
+        latest_trade_ts = None
+        latest_bar_ts = None
+        trade_age_sec = None
+        bar_age_sec = None
+        source_stale = None
+        stale_reason = None
+        trade_fetch_ok = False
+        bars_fetch_ok = False
+        now_utc = datetime.now(timezone.utc)
+
         # 1) latest trade -> last
         try:
             u = f"https://data.alpaca.markets/v2/stocks/{sym}/trades/latest?feed={feed}"
             j = _http_json_retry(u, headers)
             t = (j.get("trade") or {})
             p = t.get("p")
+
+            input_trade_ts = t.get("t")
+            latest_trade_ts = t.get("t")
+            trade_fetch_ok = True
             if p is not None:
                 last = float(p)
         except urllib.error.HTTPError as e:
@@ -340,22 +398,55 @@ def build_market_snapshot(symbols: Tuple[str, ...], **_kw) -> SnapshotContainer:
 
         # 2) bars -> vwap + ema
         try:
-            u = _bars_url(sym, feed, start, end, limit=240)
+            u = _bars_url(sym, bars_feed, start, end, limit=240)
             raw = _http_get_retry(u, headers=headers, timeout_sec=10.0)
             j = json.loads(raw)
             bars = j.get("bars", None)
+            bars_fetch_ok = True
+
+            # Alpaca bars endpoint may return:
+            #   {"bars": {"SPY": [ ... ]}}
+            # or a direct list.
+            if isinstance(bars, dict):
+                bars = bars.get(sym) or bars.get(str(sym).upper()) or bars.get(str(sym).lower())
+
+            if bars is None:
+                try:
+                    from urllib.parse import urlencode as _urlencode_fallback
+                    fallback_url = "https://data.alpaca.markets/v2/stocks/bars?" + _urlencode_fallback({
+                        "symbols": sym,
+                        "timeframe": "1Min",
+                        "limit": 240,
+                        "feed": bars_feed,
+                    })
+                    fallback_raw = _http_get_retry(fallback_url, headers=headers, timeout_sec=10.0)
+                    fallback_j = json.loads(fallback_raw)
+                    fallback_bars = fallback_j.get("bars", None) if isinstance(fallback_j, dict) else None
+
+                    if isinstance(fallback_bars, dict):
+                        fallback_bars = fallback_bars.get(sym) or fallback_bars.get(str(sym).upper()) or fallback_bars.get(str(sym).lower())
+
+                    if isinstance(fallback_bars, list) and fallback_bars:
+                        bars = fallback_bars
+                        if debug:
+                            print(f"DEBUG_BARS_GENERAL_FALLBACK_OK {sym} count={len(bars)}")
+                except Exception as _fallback_e:
+                    if debug:
+                        print(f"DEBUG_BARS_GENERAL_FALLBACK_FAIL {sym} {type(_fallback_e).__name__}")
 
             if bars is None:
                 if debug:
                     print(f"DEBUG_BARS_NULL {sym} feed={feed} raw={raw[:220]}")
             elif isinstance(bars, list) and bars:
+                input_bar_ts = _bar_time(bars[-1])
+                latest_bar_ts = _bar_time(bars[-1])
                 closes = []
                 vwaps = []
                 for b in bars:
-                    c = b.get("c")
+                    c = _bar_close(b)
                     if c is not None:
                         closes.append(float(c))
-                    vw = b.get("vw")
+                    vw = _bar_vwap(b)
                     if vw is not None:
                         vwaps.append(float(vw))
 
@@ -401,6 +492,23 @@ def build_market_snapshot(symbols: Tuple[str, ...], **_kw) -> SnapshotContainer:
             except Exception:
 
                 pass
+        trade_age_sec = _age_sec(latest_trade_ts, now_utc=now_utc)
+        bar_age_sec = _bar_age_sec_from_bar_open(latest_bar_ts, now_utc=now_utc, bar_seconds=60.0)
+        stale_parts = []
+        if trade_age_sec is None:
+            stale_parts.append("trade_ts_missing")
+        elif trade_age_sec > 30.0:
+            stale_parts.append("trade_age_exceeded")
+
+        if bar_age_sec is None:
+            stale_parts.append("bar_ts_missing")
+        elif bar_age_sec > 120.0:
+            stale_parts.append("bar_age_exceeded")
+
+        source_stale = True if len(stale_parts) > 0 else False
+        stale_reason = "|".join(stale_parts) if len(stale_parts) > 0 else None
+
+
 
         out[sym] = MarketSnap(
             symbol=sym,
@@ -409,6 +517,17 @@ def build_market_snapshot(symbols: Tuple[str, ...], **_kw) -> SnapshotContainer:
             ema_fast=ef,
             ema_slow=es,
             bar_index=bar_index,
+            provider_name=provider_name,
+            input_trade_ts=input_trade_ts,
+            input_bar_ts=input_bar_ts,
+            latest_trade_ts=latest_trade_ts,
+            latest_bar_ts=latest_bar_ts,
+            trade_age_sec=trade_age_sec,
+            bar_age_sec=bar_age_sec,
+            source_stale=source_stale,
+            stale_reason=stale_reason,
+            trade_fetch_ok=trade_fetch_ok,
+            bars_fetch_ok=bars_fetch_ok,
         )
 
     # Return container so callers can do getattr(snap, "SPY") like before
@@ -437,3 +556,14 @@ def _marketsnapshot_get_quote(market, symbol: str) -> dict:
             return {}
     return {}
 
+def _bar_age_sec_from_bar_open(v, now_utc=None, bar_seconds=60.0):
+    dt = _ts_parse_utc(v)
+    if dt is None:
+        return None
+    try:
+        now = now_utc or datetime.now(timezone.utc)
+        close_dt = dt + timedelta(seconds=float(bar_seconds or 60.0))
+        effective_dt = close_dt if close_dt <= now else now
+        return round(float((now - effective_dt).total_seconds()), 6)
+    except Exception:
+        return None

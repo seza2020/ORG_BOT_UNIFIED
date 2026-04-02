@@ -14,5 +14,6 @@ def build_market_snapshot(*, now: datetime, symbols: Iterable[str]) -> dict[str,
     """
     out: dict[str, MarketSnapshot] = {}
     for sym in symbols:
-        out[str(sym)] = MarketSnapshot(symbol=str(sym), ts=now)
+        # LAB-ONLY: suppress symbol-only placeholder snapshot emission
+        pass
     return out
